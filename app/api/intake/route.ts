@@ -2,13 +2,20 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
 const ALLOWED_ORIGINS = [
+  'https://tulliaprocedure.com',
+  'https://www.tulliaprocedure.com',
+  'https://tumescentlipolysis.com',
+  'https://www.tumescentlipolysis.com',
+  'https://tumescentcryolipolysis.com',
+  'https://www.tumescentcryolipolysis.com',
   'https://tullia.com',
   'https://www.tullia.com',
   'https://tullia-website.vercel.app',
+  'https://tcl-website-moskovitz.vercel.app',
 ]
 
 function getCorsHeaders(origin: string | null) {
-  let allowedOrigin = 'https://tullia.com'
+  let allowedOrigin = 'https://www.tulliaprocedure.com'
 
   if (origin) {
     if (
