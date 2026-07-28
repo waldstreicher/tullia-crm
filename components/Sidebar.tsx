@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Users, UserPlus, LogOut, Bell } from 'lucide-react'
+import { createClient } from '@/lib/supabase-browser'
 
 interface SidebarStats {
   newLeads: number
@@ -14,6 +15,18 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [stats, setStats] = useState<SidebarStats>({ newLeads: 0, followUpToday: 0 })
+  const [userLabel, setUserLabel] = useState('')
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (u) {
+        const name = (u.user_metadata?.full_name as string | undefined) || u.email || ''
+        setUserLabel(name)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     async function fetchStats() {
@@ -44,8 +57,10 @@ export default function Sidebar() {
   }, [pathname])
 
   async function handleLogout() {
-    await fetch('/api/auth', { method: 'DELETE' })
+    const supabase = createClient()
+    await supabase.auth.signOut()
     router.push('/login')
+    router.refresh()
   }
 
   const navItems = [
@@ -59,7 +74,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 py-8 border-b border-white/10">
         <h1 className="text-xl font-light tracking-[0.25em] text-white uppercase">
-          Tullia
+          Tuli
         </h1>
         <p className="text-xs text-[#C4956A] tracking-[0.2em] uppercase mt-0.5">
           CRM
@@ -122,8 +137,14 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* Logout */}
+      {/* Current user + Logout */}
       <div className="px-4 pb-6">
+        {userLabel && (
+          <div className="px-3 pb-2 mb-1">
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Signed in as</p>
+            <p className="text-sm text-gray-300 truncate" title={userLabel}>{userLabel}</p>
+          </div>
+        )}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-all"

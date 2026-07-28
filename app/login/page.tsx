@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { createClient } from '@/lib/supabase-browser'
 
 function LoginForm() {
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,19 +19,19 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       })
 
-      if (res.ok) {
-        router.push(from)
-        router.refresh()
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Invalid password')
+      if (signInError) {
+        setError(signInError.message || 'Invalid email or password')
+        return
       }
+
+      router.push(from && from !== '/login' ? from : '/')
+      router.refresh()
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -44,7 +45,7 @@ function LoginForm() {
         {/* Logo */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-light tracking-[0.2em] text-[#1A1A1A] uppercase">
-            Tullia
+            Tuli
           </h1>
           <p className="text-sm text-[#6B6B6B] mt-1 tracking-widest uppercase">
             CRM Portal
@@ -54,9 +55,25 @@ function LoginForm() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h2 className="text-xl font-medium text-[#1A1A1A] mb-1">Welcome back</h2>
-          <p className="text-sm text-[#6B6B6B] mb-6">Enter your password to access the CRM</p>
+          <p className="text-sm text-[#6B6B6B] mb-6">Sign in with your account to access the CRM</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-[#FAFAF8] text-[#1A1A1A] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C4956A] focus:border-transparent transition"
+              />
+            </div>
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
                 Password
@@ -68,6 +85,7 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 required
+                autoComplete="current-password"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-[#FAFAF8] text-[#1A1A1A] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C4956A] focus:border-transparent transition"
               />
             </div>
@@ -87,7 +105,7 @@ function LoginForm() {
         </div>
 
         <p className="text-center text-xs text-[#6B6B6B] mt-6">
-          Tullia Body Contouring &mdash; Internal Use Only
+          Tuli Body Contouring &mdash; Internal Use Only
         </p>
       </div>
     </div>

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Tullia CRM',
-  description: 'Patient lead management for Tullia body contouring',
+  title: 'Tuli CRM',
+  description: 'Patient lead management for Tuli body contouring',
 }
 
 export default function RootLayout({

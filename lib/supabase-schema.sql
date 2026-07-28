@@ -1,4 +1,4 @@
--- Tullia CRM Database Schema
+-- Tuli CRM Database Schema
 -- Run this in your Supabase SQL editor
 
 -- Enable UUID extension

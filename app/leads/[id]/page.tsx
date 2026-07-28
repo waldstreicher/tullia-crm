@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
+import { createClient } from '@/lib/supabase-browser'
 import {
   Lead,
   LeadNote,
@@ -111,10 +112,19 @@ function NotesTimeline({ leadId }: { leadId: string }) {
   const [loading, setLoading] = useState(true)
   const [newNote, setNewNote] = useState('')
   const [noteType, setNoteType] = useState<NoteType>('note')
-  const [author, setAuthor] = useState(() =>
-    typeof window !== 'undefined' ? localStorage.getItem('crm_author') || '' : ''
-  )
+  // Author is the signed-in user (attributed automatically).
+  const [author, setAuthor] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (u) {
+        setAuthor((u.user_metadata?.full_name as string | undefined) || u.email || '')
+      }
+    })
+  }, [])
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -132,7 +142,6 @@ function NotesTimeline({ leadId }: { leadId: string }) {
     if (!newNote.trim() || !author.trim()) return
     setSubmitting(true)
     try {
-      if (typeof window !== 'undefined') localStorage.setItem('crm_author', author)
       const res = await fetch(`/api/leads/${leadId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,14 +172,11 @@ function NotesTimeline({ leadId }: { leadId: string }) {
 
       {/* Add note form */}
       <form onSubmit={handleAddNote} className="p-4 border-b border-gray-100 space-y-3">
-        <input
-          type="text"
-          placeholder="Your name"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          required
-          className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-[#FAFAF8] focus:outline-none focus:ring-2 focus:ring-[#C4956A] focus:border-transparent"
-        />
+        {author && (
+          <p className="text-xs text-[#6B6B6B]">
+            Posting as <span className="font-medium text-[#1A1A1A]">{author}</span>
+          </p>
+        )}
         <textarea
           placeholder="Add a note..."
           value={newNote}

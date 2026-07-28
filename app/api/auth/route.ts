@@ -1,33 +1,20 @@
 import { NextResponse } from 'next/server'
 
-export async function POST(request: Request) {
-  try {
-    const { password } = await request.json()
-    const correctPassword = process.env.NEXT_PUBLIC_CRM_PASSWORD || 'tullia2025'
+// DEPRECATED: This endpoint previously issued a forgeable `crm_auth=true` cookie.
+// Authentication is now handled by Supabase Auth (see /login and the middleware).
+// The route is kept only to return a clear error for any stale clients; it no
+// longer sets or clears any authentication cookie.
 
-    if (password !== correctPassword) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
-    }
-
-    const response = NextResponse.json({ success: true })
-
-    // Set auth cookie with 8-hour expiry
-    response.cookies.set('crm_auth', 'true', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 8, // 8 hours
-      path: '/',
-    })
-
-    return response
-  } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: 'This endpoint has been removed. Sign in via Supabase Auth on /login.' },
+    { status: 410 }
+  )
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ success: true })
-  response.cookies.delete('crm_auth')
-  return response
+  return NextResponse.json(
+    { error: 'This endpoint has been removed. Use Supabase signOut() to log out.' },
+    { status: 410 }
+  )
 }
