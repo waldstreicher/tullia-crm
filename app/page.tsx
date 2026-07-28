@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Users,
   UserPlus,
@@ -13,13 +13,10 @@ import {
 } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import LeadTable from '@/components/LeadTable'
-import {
-  Lead,
-  Priority,
-  EligibilityStatus,
-  STAGE_CONFIG,
-  STAGE_ORDER,
-} from '@/lib/types'
+import { createClient } from '@/lib/supabase-browser'
+import { getRole } from '@/lib/roles'
+import { STAGE_ORDER, STAGE_CONFIG, Priority, EligibilityStatus } from '@/lib/types'
+import type { DashboardMetrics } from '@/lib/metrics'
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
@@ -69,36 +66,22 @@ function BreakdownRow({
         {labelNode ?? <span className="text-sm text-[#1A1A1A]">{label}</span>}
       </div>
       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${barColor}`}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="w-8 text-right text-sm font-medium text-[#1A1A1A] tabular-nums">
-        {count}
-      </span>
+      <span className="w-8 text-right text-sm font-medium text-[#1A1A1A] tabular-nums">{count}</span>
     </div>
   )
 }
 
-function BreakdownCard({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
+function BreakdownCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <h3 className="text-sm font-semibold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-100">
-        {title}
-      </h3>
+      <h3 className="text-sm font-semibold text-[#1A1A1A] mb-4 pb-3 border-b border-gray-100">{title}</h3>
       <div className="space-y-3">{children}</div>
     </div>
   )
 }
 
-// ─── Metric computation ───────────────────────────────────────────────────────
 const PRIORITY_META: { key: Priority; label: string; color: string }[] = [
   { key: 'high', label: 'High', color: 'bg-red-500' },
   { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
@@ -112,88 +95,37 @@ const ELIGIBILITY_META: { key: EligibilityStatus; label: string; color: string }
   { key: 'requires_more_info', label: 'Needs More Info', color: 'bg-amber-500' },
 ]
 
-function computeMetrics(leads: Lead[]) {
-  const now = new Date()
-  const weekAgo = new Date(now)
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  const today = now.toISOString().split('T')[0]
-
-  const stageBreakdown = STAGE_ORDER.map((stage) => ({
-    stage,
-    label: STAGE_CONFIG[stage].label,
-    badge: STAGE_CONFIG[stage].color,
-    count: leads.filter((l) => l.stage === stage).length,
-  }))
-
-  const priorityBreakdown = PRIORITY_META.map((p) => ({
-    ...p,
-    count: leads.filter((l) => l.priority === p.key).length,
-  }))
-
-  const eligibilityBreakdown = ELIGIBILITY_META.map((e) => ({
-    ...e,
-    count: leads.filter((l) => l.eligibility_status === e.key).length,
-  }))
-
-  // Source breakdown (dynamic), sorted by count desc
-  const sourceCounts = new Map<string, number>()
-  for (const l of leads) {
-    const src = l.source || 'unknown'
-    sourceCounts.set(src, (sourceCounts.get(src) || 0) + 1)
-  }
-  const sourceBreakdown = Array.from(sourceCounts.entries())
-    .map(([key, count]) => ({
-      key,
-      label: key.charAt(0).toUpperCase() + key.slice(1),
-      count,
-    }))
-    .sort((a, b) => b.count - a.count)
-
-  return {
-    total: leads.length,
-    newThisWeek: leads.filter((l) => new Date(l.created_at) >= weekAgo).length,
-    followUpToday: leads.filter((l) => l.next_follow_up_date === today).length,
-    followUpOverdue: leads.filter(
-      (l) => l.next_follow_up_date && l.next_follow_up_date < today
-    ).length,
-    unassigned: leads.filter((l) => !l.assigned_to).length,
-    proceduresScheduled: leads.filter(
-      (l) => l.procedure_scheduled_date && !l.procedure_completed_at
-    ).length,
-    proceduresCompleted: leads.filter((l) => l.procedure_completed_at).length,
-    virtualConsultsScheduled: leads.filter(
-      (l) => l.virtual_consult_scheduled_at && !l.virtual_consult_completed_at
-    ).length,
-    stageBreakdown,
-    priorityBreakdown,
-    eligibilityBreakdown,
-    sourceBreakdown,
-  }
-}
-
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [leads, setLeads] = useState<Lead[]>([])
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isObserver, setIsObserver] = useState(false)
+  const [roleChecked, setRoleChecked] = useState(false)
 
   useEffect(() => {
-    async function fetchLeads() {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setIsObserver(getRole(data.user) === 'observer'))
+      .catch(() => {})
+      .finally(() => setRoleChecked(true))
+  }, [])
+
+  useEffect(() => {
+    async function fetchMetrics() {
       try {
-        const res = await fetch('/api/leads')
-        if (!res.ok) return
-        const data: Lead[] = await res.json()
-        setLeads(data)
+        const res = await fetch('/api/metrics')
+        if (res.ok) setMetrics(await res.json())
       } catch {
         // Silently fail
       } finally {
         setLoading(false)
       }
     }
-    fetchLeads()
+    fetchMetrics()
   }, [])
 
-  const m = useMemo(() => computeMetrics(leads), [leads])
-  const show = (n: number) => (loading ? '—' : n)
+  const show = (n?: number) => (loading || !metrics ? '—' : n ?? 0)
+  const total = metrics?.total ?? 0
 
   return (
     <AppLayout>
@@ -213,34 +145,34 @@ export default function DashboardPage() {
 
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard icon={Users} label="Total Leads" value={show(m.total)} color="bg-blue-50 text-blue-600" />
-          <StatCard icon={UserPlus} label="New This Week" value={show(m.newThisWeek)} color="bg-[#C4956A]/10 text-[#C4956A]" />
-          <StatCard icon={CalendarClock} label="Follow Up Today" value={show(m.followUpToday)} color="bg-orange-50 text-orange-600" />
-          <StatCard icon={AlertTriangle} label="Overdue Follow-Ups" value={show(m.followUpOverdue)} color="bg-red-50 text-red-600" />
-          <StatCard icon={CalendarCheck} label="Procedures Scheduled" value={show(m.proceduresScheduled)} color="bg-indigo-50 text-indigo-600" />
-          <StatCard icon={CheckCircle2} label="Procedures Completed" value={show(m.proceduresCompleted)} color="bg-emerald-50 text-emerald-600" />
-          <StatCard icon={Video} label="Virtual Consults Scheduled" value={show(m.virtualConsultsScheduled)} color="bg-teal-50 text-teal-600" />
-          <StatCard icon={UserX} label="Unassigned" value={show(m.unassigned)} color="bg-gray-100 text-gray-500" />
+          <StatCard icon={Users} label="Total Leads" value={show(metrics?.total)} color="bg-blue-50 text-blue-600" />
+          <StatCard icon={UserPlus} label="New This Week" value={show(metrics?.newThisWeek)} color="bg-[#C4956A]/10 text-[#C4956A]" />
+          <StatCard icon={CalendarClock} label="Follow Up Today" value={show(metrics?.followUpToday)} color="bg-orange-50 text-orange-600" />
+          <StatCard icon={AlertTriangle} label="Overdue Follow-Ups" value={show(metrics?.followUpOverdue)} color="bg-red-50 text-red-600" />
+          <StatCard icon={CalendarCheck} label="Procedures Scheduled" value={show(metrics?.proceduresScheduled)} color="bg-indigo-50 text-indigo-600" />
+          <StatCard icon={CheckCircle2} label="Procedures Completed" value={show(metrics?.proceduresCompleted)} color="bg-emerald-50 text-emerald-600" />
+          <StatCard icon={Video} label="Virtual Consults Scheduled" value={show(metrics?.virtualConsultsScheduled)} color="bg-teal-50 text-teal-600" />
+          <StatCard icon={UserX} label="Unassigned" value={show(metrics?.unassigned)} color="bg-gray-100 text-gray-500" />
         </div>
 
         {/* Pipeline breakdown */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
           <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-[#1A1A1A]">Pipeline — Leads by Stage</h3>
-            <span className="text-xs text-[#6B6B6B]">{m.total} total</span>
+            <span className="text-xs text-[#6B6B6B]">{total} total</span>
           </div>
           <div className="space-y-2.5">
-            {m.stageBreakdown.map((s) => (
+            {STAGE_ORDER.map((stage) => (
               <BreakdownRow
-                key={s.stage}
-                label={s.label}
-                count={s.count}
-                total={m.total}
+                key={stage}
+                label={STAGE_CONFIG[stage].label}
+                count={metrics?.byStage?.[stage] ?? 0}
+                total={total}
                 barColor="bg-[#C4956A]"
                 labelWidth="w-48"
                 labelNode={
-                  <span className={`inline-block whitespace-nowrap text-xs font-medium px-2.5 py-1 rounded-full ${s.badge}`}>
-                    {s.label}
+                  <span className={`inline-block whitespace-nowrap text-xs font-medium px-2.5 py-1 rounded-full ${STAGE_CONFIG[stage].color}`}>
+                    {STAGE_CONFIG[stage].label}
                   </span>
                 }
               />
@@ -251,33 +183,41 @@ export default function DashboardPage() {
         {/* Breakdowns: priority / eligibility / source */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           <BreakdownCard title="Priority">
-            {m.priorityBreakdown.map((p) => (
-              <BreakdownRow key={p.key} label={p.label} count={p.count} total={m.total} barColor={p.color} />
+            {PRIORITY_META.map((p) => (
+              <BreakdownRow key={p.key} label={p.label} count={metrics?.byPriority?.[p.key] ?? 0} total={total} barColor={p.color} />
             ))}
           </BreakdownCard>
 
           <BreakdownCard title="Eligibility">
-            {m.eligibilityBreakdown.map((e) => (
-              <BreakdownRow key={e.key} label={e.label} count={e.count} total={m.total} barColor={e.color} />
+            {ELIGIBILITY_META.map((e) => (
+              <BreakdownRow key={e.key} label={e.label} count={metrics?.byEligibility?.[e.key] ?? 0} total={total} barColor={e.color} />
             ))}
           </BreakdownCard>
 
           <BreakdownCard title="Lead Sources">
-            {m.sourceBreakdown.length === 0 ? (
+            {!metrics?.bySource?.length ? (
               <p className="text-sm text-[#6B6B6B]">No leads yet</p>
             ) : (
-              m.sourceBreakdown.map((s) => (
-                <BreakdownRow key={s.key} label={s.label} count={s.count} total={m.total} barColor="bg-[#C4956A]" />
+              metrics.bySource.map((s) => (
+                <BreakdownRow
+                  key={s.source}
+                  label={s.source.charAt(0).toUpperCase() + s.source.slice(1)}
+                  count={s.count}
+                  total={total}
+                  barColor="bg-[#C4956A]"
+                />
               ))
             )}
           </BreakdownCard>
         </div>
 
-        {/* Lead Table */}
-        <div>
-          <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4">All Leads</h2>
-          <LeadTable />
-        </div>
+        {/* Lead Table — full users only (observers never receive lead PII) */}
+        {roleChecked && !isObserver && (
+          <div>
+            <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4">All Leads</h2>
+            <LeadTable />
+          </div>
+        )}
       </div>
     </AppLayout>
   )

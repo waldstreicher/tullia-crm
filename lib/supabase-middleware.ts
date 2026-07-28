@@ -1,11 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getRole } from '@/lib/roles'
 
-// Paths that do NOT require authentication.
+// Paths that do NOT require an authenticated user session.
 function isPublicPath(pathname: string): boolean {
   if (pathname === '/login') return true
   // Public website intake endpoint (leads posted from the Tuli website).
   if (pathname.startsWith('/api/intake')) return true
+  // Cron endpoints authenticate via CRON_SECRET, not a user session.
+  if (pathname.startsWith('/api/cron')) return true
+  return false
+}
+
+// The only paths an Observer may reach. Everything else (all lead pages and
+// lead/user APIs, which expose patient PII) is blocked for observers.
+function observerAllowed(pathname: string): boolean {
+  if (pathname === '/') return true
+  if (pathname.startsWith('/api/metrics')) return true
+  if (pathname.startsWith('/api/auth')) return true
   return false
 }
 
@@ -60,6 +72,18 @@ export async function updateSession(request: NextRequest) {
 
   // Already signed in but sitting on the login page → send to the dashboard.
   if (user && pathname === '/login') {
+    const homeUrl = request.nextUrl.clone()
+    homeUrl.pathname = '/'
+    homeUrl.search = ''
+    return NextResponse.redirect(homeUrl)
+  }
+
+  // Observers are confined to the dashboard + aggregate metrics. Any attempt to
+  // reach lead data is refused here, on the server — never relying on the UI.
+  if (user && getRole(user) === 'observer' && !observerAllowed(pathname)) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const homeUrl = request.nextUrl.clone()
     homeUrl.pathname = '/'
     homeUrl.search = ''

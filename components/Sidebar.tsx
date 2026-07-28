@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Users, UserPlus, LogOut, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
+import { getRole, type Role } from '@/lib/roles'
 
 interface SidebarStats {
   newLeads: number
@@ -16,14 +17,15 @@ export default function Sidebar() {
   const router = useRouter()
   const [stats, setStats] = useState<SidebarStats>({ newLeads: 0, followUpToday: 0 })
   const [userLabel, setUserLabel] = useState('')
+  const [role, setRole] = useState<Role>('user')
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
       const u = data.user
       if (u) {
-        const name = (u.user_metadata?.full_name as string | undefined) || u.email || ''
-        setUserLabel(name)
+        setUserLabel((u.user_metadata?.full_name as string | undefined) || u.email || '')
+        setRole(getRole(u))
       }
     })
   }, [])
@@ -31,23 +33,13 @@ export default function Sidebar() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [newRes, followRes] = await Promise.all([
-          fetch('/api/leads?stage=new_lead'),
-          fetch('/api/leads?follow_up_today=true'),
-        ])
-        const [newLeads, followUp] = await Promise.all([
-          newRes.json(),
-          followRes.json(),
-        ])
-
-        const today = new Date().toISOString().split('T')[0]
-        const followUpToday = Array.isArray(followUp)
-          ? followUp.filter((l: { next_follow_up_date?: string }) => l.next_follow_up_date === today).length
-          : 0
-
+        // Aggregate metrics only — works for observers too and never pulls PII.
+        const res = await fetch('/api/metrics')
+        if (!res.ok) return
+        const m = await res.json()
         setStats({
-          newLeads: Array.isArray(newLeads) ? newLeads.length : 0,
-          followUpToday,
+          newLeads: m?.byStage?.new_lead ?? 0,
+          followUpToday: m?.followUpToday ?? 0,
         })
       } catch {
         // Silently fail
@@ -63,22 +55,21 @@ export default function Sidebar() {
     router.refresh()
   }
 
-  const navItems = [
-    { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/leads', icon: Users, label: 'All Leads' },
-    { href: '/leads/new', icon: UserPlus, label: 'New Lead' },
-  ]
+  const isObserver = role === 'observer'
+  const navItems = isObserver
+    ? [{ href: '/', icon: LayoutDashboard, label: 'Dashboard' }]
+    : [
+        { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { href: '/leads', icon: Users, label: 'All Leads' },
+        { href: '/leads/new', icon: UserPlus, label: 'New Lead' },
+      ]
 
   return (
     <aside className="w-64 min-h-screen bg-[#1A1A1A] flex flex-col">
       {/* Logo */}
       <div className="px-6 py-8 border-b border-white/10">
-        <h1 className="text-xl font-light tracking-[0.25em] text-white uppercase">
-          Tuli
-        </h1>
-        <p className="text-xs text-[#C4956A] tracking-[0.2em] uppercase mt-0.5">
-          CRM
-        </p>
+        <h1 className="text-xl font-light tracking-[0.25em] text-white uppercase">Tuli</h1>
+        <p className="text-xs text-[#C4956A] tracking-[0.2em] uppercase mt-0.5">CRM</p>
       </div>
 
       {/* Navigation */}
@@ -86,15 +77,12 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
           const Icon = item.icon
-
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                isActive
-                  ? 'bg-[#C4956A] text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10'
+                isActive ? 'bg-[#C4956A] text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'
               }`}
             >
               <Icon size={18} />
@@ -103,7 +91,7 @@ export default function Sidebar() {
           )
         })}
 
-        {/* Badges section */}
+        {/* Activity badges */}
         <div className="pt-6 space-y-2">
           <p className="text-xs text-gray-600 uppercase tracking-widest px-3 mb-3">Activity</p>
 
@@ -113,9 +101,7 @@ export default function Sidebar() {
                 <Bell size={14} />
                 <span>New Leads</span>
               </div>
-              <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {stats.newLeads}
-              </span>
+              <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.newLeads}</span>
             </div>
           )}
 
@@ -125,9 +111,7 @@ export default function Sidebar() {
                 <Bell size={14} />
                 <span>Follow Up Today</span>
               </div>
-              <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {stats.followUpToday}
-              </span>
+              <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{stats.followUpToday}</span>
             </div>
           )}
 
@@ -141,7 +125,9 @@ export default function Sidebar() {
       <div className="px-4 pb-6">
         {userLabel && (
           <div className="px-3 pb-2 mb-1">
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Signed in as</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest">
+              Signed in as{isObserver ? ' · Observer' : ''}
+            </p>
             <p className="text-sm text-gray-300 truncate" title={userLabel}>{userLabel}</p>
           </div>
         )}

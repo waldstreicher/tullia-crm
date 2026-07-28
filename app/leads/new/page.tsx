@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
 import { PROCEDURE_AREAS, PipelineStage, Priority, EligibilityStatus } from '@/lib/types'
@@ -27,6 +27,14 @@ export default function NewLeadPage() {
     internal_notes: '',
     tags: '',
   })
+
+  const [users, setUsers] = useState<{ email: string; name: string }[]>([])
+  useEffect(() => {
+    fetch('/api/users')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((u) => setUsers(Array.isArray(u) ? u : []))
+      .catch(() => {})
+  }, [])
 
   function handleAreaToggle(area: string) {
     setForm((prev) => ({
@@ -238,13 +246,16 @@ export default function NewLeadPage() {
               </div>
               <div>
                 <label className={labelClass}>Assigned To</label>
-                <input
-                  type="text"
+                <select
                   value={form.assigned_to}
                   onChange={(e) => setForm((p) => ({ ...p, assigned_to: e.target.value }))}
                   className={inputClass}
-                  placeholder="Team member name"
-                />
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.email} value={u.email}>{u.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

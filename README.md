@@ -20,11 +20,62 @@ Copy `.env.local.example` to `.env.local` and fill in your values:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# Daily observer digest email (see section 7)
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM=Tuli CRM <dashboard@your-verified-domain.com>
+CRON_SECRET=any_long_random_string
 ```
 
 **For Vercel deployment**, add these same variables in your Vercel project settings under **Settings > Environment Variables**.
 
-> The service role key is only used in server-side API routes and is never exposed to the browser.
+> The service role key is only used in server-side API routes and is never exposed to the browser. `RESEND_*` and `CRON_SECRET` are server-only and only needed for the daily digest email.
+
+---
+
+## 6. Roles: Users vs Observers
+
+Every account has a role, stored in Supabase **`app_metadata`** (admin-only, so it
+can't be changed by the user). Absence of a role means **User**.
+
+- **User** — full access: view, add, and edit leads.
+- **Observer** — sees only the aggregate dashboard (KPIs + pipeline/priority/
+  eligibility/source breakdowns). Observers **cannot** reach any lead pages or the
+  lead/user APIs — this is enforced in the middleware on the server, so no patient
+  personal information is ever sent to an observer. They also receive the daily
+  digest email (section 7).
+
+**Mark an account as Observer** — in the Supabase **SQL Editor**, run:
+
+```sql
+update auth.users
+set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"observer"}'::jsonb
+where email = 'observer@example.com';
+```
+
+To turn an Observer back into a User, set the role to `"user"` (or remove the key).
+The change takes effect the next time that user signs in (or their token refreshes).
+
+---
+
+## 7. Daily Observer Digest Email (8 AM ET)
+
+A Vercel Cron job posts to `/api/cron/daily-digest` each morning; the route builds
+the aggregate dashboard (no PII) and emails it to every Observer via **Resend**.
+
+**One-time setup**
+
+1. Create a free account at [resend.com](https://resend.com), verify a sender
+   domain/address, and create an API key.
+2. In Vercel → **Settings → Environment Variables**, add `RESEND_API_KEY`,
+   `RESEND_FROM` (e.g. `Tuli CRM <dashboard@yourdomain.com>`), and `CRON_SECRET`
+   (any long random string — Vercel automatically sends it to the cron route so no
+   one else can trigger it).
+3. Redeploy. The schedule lives in `vercel.json` (`0 12 * * *` = 8 AM Eastern
+   during daylight time; it lands at 7 AM ET in winter — change to `0 13 * * *`
+   for winter, or leave as-is).
+
+> Vercel Hobby plans run cron jobs once per day, which is exactly what this needs.
 
 ---
 

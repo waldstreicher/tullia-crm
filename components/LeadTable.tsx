@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, ChevronUp, ChevronDown } from 'lucide-react'
 import { Lead, PipelineStage, Priority, STAGE_CONFIG } from '@/lib/types'
+import { createClient } from '@/lib/supabase-browser'
 
 type SortField = 'created_at' | 'first_name' | 'stage' | 'priority' | 'next_follow_up_date'
 type SortDir = 'asc' | 'desc'
@@ -34,6 +35,27 @@ export default function LeadTable() {
 
   // Unique assigned_to values
   const [assignees, setAssignees] = useState<string[]>([])
+
+  // Current user + assignable-user name map (for "my leads first" + display)
+  const [currentEmail, setCurrentEmail] = useState('')
+  const [userMap, setUserMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setCurrentEmail(data.user?.email || ''))
+      .catch(() => {})
+    fetch('/api/users')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((us: { email: string; name: string }[]) => {
+        const map: Record<string, string> = {}
+        for (const u of us) map[u.email] = u.name
+        setUserMap(map)
+      })
+      .catch(() => {})
+  }, [])
+
+  const userName = (email?: string) => (email ? userMap[email] || email : '')
 
   const fetchLeads = useCallback(async () => {
     setLoading(true)
@@ -99,8 +121,13 @@ export default function LeadTable() {
       if (aVal > bVal) return sortDir === 'asc' ? 1 : -1
       return 0
     })
+    // Float the signed-in user's assigned leads to the top (stable within groups).
+    if (currentEmail) {
+      const mine = (l: Lead) => (l.assigned_to === currentEmail ? 0 : 1)
+      sorted.sort((a, b) => mine(a) - mine(b))
+    }
     setFiltered(sorted)
-  }, [leads, sortField, sortDir])
+  }, [leads, sortField, sortDir, currentEmail])
 
   function handleSort(field: SortField) {
     if (sortField === field) {
@@ -172,7 +199,7 @@ export default function LeadTable() {
           >
             <option value="">All Assignees</option>
             {assignees.map((a) => (
-              <option key={a} value={a}>{a}</option>
+              <option key={a} value={a}>{userName(a)}</option>
             ))}
           </select>
         )}
@@ -270,7 +297,18 @@ export default function LeadTable() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-[#6B6B6B]">
-                      {lead.assigned_to || <span className="text-gray-300">Unassigned</span>}
+                      {lead.assigned_to ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {userName(lead.assigned_to)}
+                          {lead.assigned_to === currentEmail && (
+                            <span className="text-[10px] font-semibold text-[#C4956A] bg-[#C4956A]/10 px-1.5 py-0.5 rounded-full">
+                              You
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">Unassigned</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {lead.next_follow_up_date ? (

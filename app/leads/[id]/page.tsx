@@ -248,6 +248,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [users, setUsers] = useState<{ email: string; name: string }[]>([])
 
   // Local editable state
   const [assignedTo, setAssignedTo] = useState('')
@@ -300,6 +301,13 @@ export default function LeadDetailPage() {
     }
     fetchLead()
   }, [leadId])
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((u) => setUsers(Array.isArray(u) ? u : []))
+      .catch(() => {})
+  }, [])
 
   // Auto-save individual fields
   useAutoSave(leadId, 'assigned_to', assignedTo || null)
@@ -524,13 +532,16 @@ export default function LeadDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Assigned To</label>
-                    <input
-                      type="text"
+                    <select
                       value={assignedTo}
                       onChange={(e) => setAssignedTo(e.target.value)}
                       className={inputClass}
-                      placeholder="Team member"
-                    />
+                    >
+                      <option value="">Unassigned</option>
+                      {users.map((u) => (
+                        <option key={u.email} value={u.email}>{u.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className={labelClass}>Priority</label>
