@@ -67,7 +67,9 @@ export default function DashboardPage() {
             (l) => l.next_follow_up_date === today
           ).length,
           proceduresScheduled: leads.filter(
-            (l) => l.stage === 'procedure_scheduled'
+            // A procedure counts as "scheduled" when it has a scheduled date
+            // and has not yet been completed.
+            (l) => l.procedure_scheduled_date && !l.procedure_completed_at
           ).length,
         })
       } catch {
