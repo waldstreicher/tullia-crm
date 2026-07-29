@@ -25,6 +25,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 RESEND_API_KEY=your_resend_api_key
 RESEND_FROM=Tuli CRM <dashboard@your-verified-domain.com>
 CRON_SECRET=any_long_random_string
+
+# Admins who can manage roles on the in-app Team page (comma-separated)
+ADMIN_EMAILS=you@example.com
 ```
 
 **For Vercel deployment**, add these same variables in your Vercel project settings under **Settings > Environment Variables**.
@@ -55,6 +58,11 @@ where email = 'observer@example.com';
 
 To turn an Observer back into a User, set the role to `"user"` (or remove the key).
 The change takes effect the next time that user signs in (or their token refreshes).
+
+**Easier: the in-app Team page.** Accounts listed in `ADMIN_EMAILS` see a **Team**
+link in the sidebar (`/team`) with a User/Observer toggle for each account — no SQL
+needed. Admins always have full access regardless of their own role, and the Team
+page + its API are restricted to admins in the middleware (server-side).
 
 ---
 

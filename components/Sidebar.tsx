@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, UserPlus, LogOut, Bell } from 'lucide-react'
+import { LayoutDashboard, Users, UserPlus, LogOut, Bell, Shield } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { getRole, type Role } from '@/lib/roles'
 
@@ -18,6 +18,7 @@ export default function Sidebar() {
   const [stats, setStats] = useState<SidebarStats>({ newLeads: 0, followUpToday: 0 })
   const [userLabel, setUserLabel] = useState('')
   const [role, setRole] = useState<Role>('user')
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -28,6 +29,12 @@ export default function Sidebar() {
         setRole(getRole(u))
       }
     })
+    fetch('/api/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setIsAdmin(!!d.isAdmin)
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -55,14 +62,18 @@ export default function Sidebar() {
     router.refresh()
   }
 
-  const isObserver = role === 'observer'
-  const navItems = isObserver
-    ? [{ href: '/', icon: LayoutDashboard, label: 'Dashboard' }]
-    : [
-        { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-        { href: '/leads', icon: Users, label: 'All Leads' },
-        { href: '/leads/new', icon: UserPlus, label: 'New Lead' },
-      ]
+  // Admins always have full access, even if their role is observer.
+  const isObserver = role === 'observer' && !isAdmin
+  const navItems = [
+    { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    ...(!isObserver
+      ? [
+          { href: '/leads', icon: Users, label: 'All Leads' },
+          { href: '/leads/new', icon: UserPlus, label: 'New Lead' },
+        ]
+      : []),
+    ...(isAdmin ? [{ href: '/team', icon: Shield, label: 'Team' }] : []),
+  ]
 
   return (
     <aside className="w-64 min-h-screen bg-[#1A1A1A] flex flex-col">

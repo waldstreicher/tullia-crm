@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getRole } from '@/lib/roles'
+import { isAdmin } from '@/lib/admins'
 
 // Paths that do NOT require an authenticated user session.
 function isPublicPath(pathname: string): boolean {
@@ -18,7 +19,13 @@ function observerAllowed(pathname: string): boolean {
   if (pathname === '/') return true
   if (pathname.startsWith('/api/metrics')) return true
   if (pathname.startsWith('/api/auth')) return true
+  if (pathname.startsWith('/api/me')) return true
   return false
+}
+
+// Admin-only paths (Team management).
+function isAdminPath(pathname: string): boolean {
+  return pathname === '/team' || pathname.startsWith('/api/team')
 }
 
 // Refreshes the Supabase session on every request and gates protected routes.
@@ -80,7 +87,24 @@ export async function updateSession(request: NextRequest) {
 
   // Observers are confined to the dashboard + aggregate metrics. Any attempt to
   // reach lead data is refused here, on the server — never relying on the UI.
-  if (user && getRole(user) === 'observer' && !observerAllowed(pathname)) {
+  // Admins are never restricted, regardless of their role value.
+  if (
+    user &&
+    getRole(user) === 'observer' &&
+    !isAdmin(user.email) &&
+    !observerAllowed(pathname)
+  ) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const homeUrl = request.nextUrl.clone()
+    homeUrl.pathname = '/'
+    homeUrl.search = ''
+    return NextResponse.redirect(homeUrl)
+  }
+
+  // Team management (page + APIs) is admin-only.
+  if (user && isAdminPath(pathname) && !isAdmin(user.email)) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
