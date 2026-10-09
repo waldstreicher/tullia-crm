@@ -70,3 +70,33 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ success: true })
 }
+
+// Reset a user's password to an admin-chosen value.
+export async function POST(request: Request) {
+  if (!(await callerIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  let body: { userId?: string; password?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const { userId, password } = body
+  if (!userId || !password || password.length < 6) {
+    return NextResponse.json(
+      { error: 'userId and a password of at least 6 characters are required' },
+      { status: 400 }
+    )
+  }
+
+  const svc = createServiceClient()
+  const { error } = await svc.auth.admin.updateUserById(userId, { password })
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}

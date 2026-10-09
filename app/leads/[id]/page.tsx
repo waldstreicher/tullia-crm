@@ -393,6 +393,24 @@ export default function LeadDetailPage() {
 
   const stageConf = STAGE_CONFIG[lead.stage]
 
+  // The website embeds the consultation "Primary goal" (fat reduction /
+  // tightening / both) inside the free-text message as "[Primary goal: X]".
+  // Pull it out so it reads as its own clear field, and strip it from the message.
+  const goalMatch = lead.message?.match(/\[\s*primary goal\s*:\s*([^\]]+)\]/i)
+  const goalRaw = goalMatch?.[1]?.trim()
+  const primaryGoal = goalRaw
+    ? /both/i.test(goalRaw)
+      ? 'Both — fat reduction + skin tightening'
+      : /fat/i.test(goalRaw)
+        ? 'Fat reduction'
+        : /tighten/i.test(goalRaw)
+          ? 'Skin tightening'
+          : goalRaw
+    : null
+  const cleanedMessage = lead.message
+    ? lead.message.replace(/\[\s*primary goal\s*:\s*[^\]]+\]/i, '').trim()
+    : ''
+
   return (
     <AppLayout>
       <div className="p-6 lg:p-8">
@@ -509,11 +527,19 @@ export default function LeadDetailPage() {
                     </div>
                   </div>
                 )}
-                {lead.message && (
+                {primaryGoal && (
+                  <div className="pt-2">
+                    <p className="text-xs text-[#6B6B6B] mb-1">Primary Goal</p>
+                    <span className="inline-block text-sm font-medium text-[#1A1A1A] bg-[#C4956A]/10 border border-[#C4956A]/20 px-3 py-1 rounded-full">
+                      {primaryGoal}
+                    </span>
+                  </div>
+                )}
+                {cleanedMessage && (
                   <div className="pt-2">
                     <p className="text-xs text-[#6B6B6B] mb-1">Original Message</p>
                     <p className="text-sm text-[#1A1A1A] bg-gray-50 rounded-xl p-3 leading-relaxed">
-                      {lead.message}
+                      {cleanedMessage}
                     </p>
                   </div>
                 )}
