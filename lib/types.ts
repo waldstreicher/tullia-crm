@@ -96,7 +96,6 @@ export const PROCEDURE_AREAS = [
   'Chin',
   'Male Chest',
   'Stomach',
-  'Back',
   'Hips',
   'Thighs',
   'Legs',
