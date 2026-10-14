@@ -120,10 +120,12 @@ export async function sendEmail({
   to,
   subject,
   html,
+  replyTo,
 }: {
   to: string
   subject: string
   html: string
+  replyTo?: string
 }): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY
   const from = process.env.RESEND_FROM
@@ -137,7 +139,7 @@ export async function sendEmail({
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({ from, to, subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
     })
     if (!res.ok) {
       const text = await res.text()
@@ -147,4 +149,96 @@ export async function sendEmail({
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'send failed' }
   }
+}
+
+// ─── Scheduling emails ───────────────────────────────────────────────────────
+const PRACTICE_PHONE = '(201) 225-1101'
+
+function shell(title: string, bodyHtml: string, footer: string): string {
+  return `<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#FAFAF8">
+  <div style="max-width:560px;margin:0 auto;padding:28px 20px;font-family:Inter,Arial,Helvetica,sans-serif">
+    <div style="margin-bottom:18px">
+      <span style="font-size:22px;color:${DARK};font-weight:400">Tu</span><span style="font-size:22px;color:${GOLD};font-weight:500">Li</span>
+      <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${MUTED};margin-top:2px">Tumescent Lipolysis</div>
+    </div>
+    <div style="background:#ffffff;border:1px solid #eeeeee;border-radius:14px;padding:22px">
+      <div style="font-size:18px;font-weight:600;color:${DARK};margin-bottom:12px">${esc(title)}</div>
+      ${bodyHtml}
+    </div>
+    <div style="font-size:11px;color:${MUTED};margin-top:18px;text-align:center;line-height:1.5">${footer}</div>
+  </div>
+</body>
+</html>`
+}
+
+function whenBox(whenLabel: string): string {
+  return `<div style="background:#FAFAF8;border:1px solid #EDE9E3;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:16px;font-weight:600;color:${DARK}">${esc(whenLabel)}</div>`
+}
+
+// To the prospect, right after they pick a slot (or after staff reschedule them).
+export function renderBookingConfirmation({
+  firstName,
+  whenLabel,
+  rescheduled = false,
+}: {
+  firstName: string
+  whenLabel: string
+  rescheduled?: boolean
+}): string {
+  const body = `
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">Hi ${esc(firstName)},</p>
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">
+      ${rescheduled ? 'Your follow-up call has been moved to:' : 'Your follow-up call about TuLi is confirmed for:'}
+    </p>
+    ${whenBox(whenLabel)}
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
+      A member of the TuLi team will call you at the phone number you provided. The call takes about 30 minutes —
+      it's a chance to talk through your goals and any questions before a consultation.
+    </p>
+    <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
+      Need to change the time? Just reply to this email or call ${PRACTICE_PHONE}.
+    </p>`
+  return shell(
+    rescheduled ? 'Your call has been rescheduled' : 'Your call is confirmed',
+    body,
+    `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`
+  )
+}
+
+// To the prospect, the morning of the call.
+export function renderBookingReminder({ firstName, whenLabel }: { firstName: string; whenLabel: string }): string {
+  const body = `
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">Hi ${esc(firstName)},</p>
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">A quick reminder that your TuLi follow-up call is today:</p>
+    ${whenBox(whenLabel)}
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
+      A member of the TuLi team will call the phone number you provided. If you can't make it, reply to this email or call ${PRACTICE_PHONE} and we'll find another time.
+    </p>`
+  return shell('Your call is today', body, `TuLi — Tumescent Lipolysis · ${PRACTICE_PHONE}`)
+}
+
+// To staff. Deliberately contains NO patient information — only the time and a
+// link into the CRM, consistent with keeping PII out of email.
+export function renderStaffBookingNotice({
+  kind,
+  whenLabel,
+  leadUrl,
+}: {
+  kind: 'booked' | 'rescheduled' | 'cancelled'
+  whenLabel: string
+  leadUrl: string
+}): string {
+  const headline =
+    kind === 'booked' ? 'New follow-up call booked' : kind === 'rescheduled' ? 'Follow-up call rescheduled' : 'Follow-up call cancelled'
+  const body = `
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
+      A prospect ${kind === 'booked' ? 'booked a follow-up call for' : kind === 'rescheduled' ? 'moved their follow-up call to' : 'cancelled their follow-up call on'}:
+    </p>
+    ${whenBox(whenLabel)}
+    <p style="font-size:14px;margin:0">
+      <a href="${esc(leadUrl)}" style="display:inline-block;background:${GOLD};color:#ffffff;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:10px;font-size:13px">Open in CRM</a>
+    </p>`
+  return shell(headline, body, 'Tuli CRM — automated notice. No patient information is included in this email.')
 }

@@ -8,6 +8,9 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === '/login') return true
   // Public website intake endpoint (leads posted from the Tuli website).
   if (pathname.startsWith('/api/intake')) return true
+  // Public scheduling endpoints (slot listing + booking from the website's
+  // /schedule page). Booking is gated by a signed token, not a session.
+  if (pathname.startsWith('/api/public/')) return true
   // Cron endpoints authenticate via CRON_SECRET, not a user session.
   if (pathname.startsWith('/api/cron')) return true
   return false

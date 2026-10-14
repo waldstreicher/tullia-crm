@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import AppLayout from '@/components/AppLayout'
+import AppointmentCard from '@/components/AppointmentCard'
 import { createClient } from '@/lib/supabase-browser'
 import {
   Lead,
@@ -545,6 +546,9 @@ export default function LeadDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Follow-up call: current booking + full scheduling history */}
+            <AppointmentCard leadId={leadId} />
 
             {/* Stage Stepper */}
             <StageStepper currentStage={lead.stage} onStageChange={handleStageChange} />

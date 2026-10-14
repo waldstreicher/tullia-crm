@@ -1,45 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-
-const ALLOWED_ORIGINS = [
-  'https://tulliaprocedure.com',
-  'https://www.tulliaprocedure.com',
-  'https://tumescentlipolysis.com',
-  'https://www.tumescentlipolysis.com',
-  'https://tumescentcryolipolysis.com',
-  'https://www.tumescentcryolipolysis.com',
-  'https://tullia.com',
-  'https://www.tullia.com',
-  'https://tullia-website.vercel.app',
-  'https://tcl-website-moskovitz.vercel.app',
-]
-
-function getCorsHeaders(origin: string | null) {
-  let allowedOrigin = 'https://www.tulliaprocedure.com'
-
-  if (origin) {
-    if (
-      ALLOWED_ORIGINS.includes(origin) ||
-      /^https:\/\/[a-z0-9-]+-[a-z0-9]+-[a-z0-9]+\.vercel\.app$/.test(origin) ||
-      origin.endsWith('.vercel.app')
-    ) {
-      allowedOrigin = origin
-    }
-  }
-
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  }
-}
+import { getCorsHeaders, corsPreflight } from '@/lib/cors'
+import { signBookingToken } from '@/lib/booking-token'
 
 export async function OPTIONS(request: Request) {
-  const origin = request.headers.get('origin')
-  return new NextResponse(null, {
-    status: 200,
-    headers: getCorsHeaders(origin),
-  })
+  return corsPreflight(request)
 }
 
 export async function POST(request: Request) {
@@ -99,8 +64,10 @@ export async function POST(request: Request) {
       )
     }
 
+    // booking_token lets the website send the prospect straight to the
+    // /schedule page to pick a follow-up call slot for this lead.
     return NextResponse.json(
-      { success: true, id: data.id },
+      { success: true, id: data.id, booking_token: signBookingToken(data.id) },
       { status: 201, headers: corsHeaders }
     )
   } catch (err) {

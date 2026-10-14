@@ -103,3 +103,50 @@ export const PROCEDURE_AREAS = [
   'Female Breasts',
   'Buttocks',
 ]
+
+// ─── Scheduling ──────────────────────────────────────────────────────────────
+export type AppointmentStatus = 'booked' | 'cancelled' | 'completed' | 'no_show'
+
+export interface Appointment {
+  id: string
+  created_at: string
+  updated_at: string
+  lead_id: string
+  owner_email: string
+  starts_at: string
+  ends_at: string
+  status: AppointmentStatus
+  booked_via: 'website' | 'crm'
+  rescheduled_from?: string | null
+  cancel_reason?: string | null
+  cancelled_at?: string | null
+  confirmation_sent_at?: string | null
+  reminder_sent_at?: string | null
+  // Present when the API joins the lead (appointments list).
+  leads?: { first_name: string; last_name: string; email: string; phone?: string | null } | null
+}
+
+export interface AvailabilityRule {
+  id: string
+  owner_email: string
+  weekday: number // 0 = Sunday … 6 = Saturday
+  start_time: string // 'HH:MM:SS' from the DB
+  end_time: string
+}
+
+export interface AvailabilityOverride {
+  id: string
+  owner_email: string
+  date: string // 'YYYY-MM-DD'
+  kind: 'block' | 'open'
+  start_time?: string | null
+  end_time?: string | null
+  note?: string | null
+}
+
+export const APPOINTMENT_STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string }> = {
+  booked: { label: 'Booked', color: 'bg-green-100 text-green-800' },
+  completed: { label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
+  no_show: { label: 'No-Show', color: 'bg-red-100 text-red-800' },
+  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600' },
+}
