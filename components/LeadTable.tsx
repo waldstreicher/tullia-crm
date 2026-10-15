@@ -149,7 +149,13 @@ export default function LeadTable() {
 
   function formatDate(dateStr?: string) {
     if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    // Date-only values (YYYY-MM-DD, e.g. next_follow_up_date) are parsed as LOCAL
+    // midnight, not UTC, so they don't display as the day before in timezones
+    // behind UTC. Full timestamps (created_at) are left as-is.
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+      ? new Date(`${dateStr}T00:00:00`)
+      : new Date(dateStr)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   const stageOptions = Object.entries(STAGE_CONFIG) as [PipelineStage, { label: string; color: string }][]
