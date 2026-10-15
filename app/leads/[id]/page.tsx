@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import AppointmentCard from '@/components/AppointmentCard'
 import { createClient } from '@/lib/supabase-browser'
@@ -29,6 +30,7 @@ import {
   Send,
   RefreshCw,
   Trash2,
+  TriangleAlert,
 } from 'lucide-react'
 
 // ─── Note Icon Map ───────────────────────────────────────────────────────────
@@ -250,6 +252,9 @@ export default function LeadDetailPage() {
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [users, setUsers] = useState<{ email: string; name: string }[]>([])
+  const [duplicates, setDuplicates] = useState<
+    { id: string; first_name: string; last_name: string; stage: PipelineStage; created_at: string }[]
+  >([])
 
   // Local editable state
   const [assignedTo, setAssignedTo] = useState('')
@@ -301,6 +306,14 @@ export default function LeadDetailPage() {
       }
     }
     fetchLead()
+  }, [leadId])
+
+  // Other leads with the same phone number (shown as a banner with links).
+  useEffect(() => {
+    fetch(`/api/leads/${leadId}/duplicates`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setDuplicates(Array.isArray(d) ? d : []))
+      .catch(() => {})
   }, [leadId])
 
   useEffect(() => {
@@ -444,6 +457,35 @@ export default function LeadDetailPage() {
             Delete
           </button>
         </div>
+
+        {/* Possible duplicate (same phone number as another lead) */}
+        {duplicates.length > 0 && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+            <TriangleAlert size={18} className="mt-0.5 shrink-0 text-amber-700" />
+            <div className="text-sm text-amber-900">
+              <p className="font-semibold">
+                Possible duplicate — same phone number as {duplicates.length === 1 ? 'another lead' : `${duplicates.length} other leads`}
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {duplicates.map((d) => (
+                  <li key={d.id}>
+                    <Link href={`/leads/${d.id}`} className="underline hover:text-amber-700">
+                      {d.first_name} {d.last_name}
+                    </Link>
+                    <span className="text-amber-800">
+                      {' '}· {STAGE_CONFIG[d.stage]?.label ?? d.stage} · added {formatDate(d.created_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {lead.stage === 'check_duplicate' && (
+                <p className="mt-2 text-amber-800">
+                  Review the other record, then move this lead to the right stage below (or delete it if it&apos;s a true duplicate).
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Delete confirm */}
         {deleteConfirm && (

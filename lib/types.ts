@@ -1,4 +1,5 @@
 export type PipelineStage =
+  | 'check_duplicate'
   | 'new_lead'
   | 'attempted_contact'
   | 'contacted'
@@ -64,6 +65,7 @@ export interface LeadNote {
 }
 
 export const STAGE_CONFIG: Record<PipelineStage, { label: string; color: string }> = {
+  check_duplicate: { label: 'Check Duplicate', color: 'bg-amber-200 text-amber-900' },
   new_lead: { label: 'New Lead', color: 'bg-blue-100 text-blue-800' },
   attempted_contact: { label: 'Attempted Contact', color: 'bg-yellow-100 text-yellow-800' },
   contacted: { label: 'Contacted', color: 'bg-indigo-100 text-indigo-800' },
@@ -78,6 +80,7 @@ export const STAGE_CONFIG: Record<PipelineStage, { label: string; color: string 
 }
 
 export const STAGE_ORDER: PipelineStage[] = [
+  'check_duplicate',
   'new_lead',
   'attempted_contact',
   'contacted',

@@ -216,6 +216,7 @@ export default function NewLeadPage() {
                   onChange={(e) => setForm((p) => ({ ...p, stage: e.target.value as PipelineStage }))}
                   className={inputClass}
                 >
+                  <option value="check_duplicate">Check Duplicate</option>
                   <option value="new_lead">New Lead</option>
                   <option value="attempted_contact">Attempted Contact</option>
                   <option value="contacted">Contacted</option>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { getCorsHeaders, corsPreflight } from '@/lib/cors'
 import { signBookingToken } from '@/lib/booking-token'
+import { insertLeadWithDuplicateCheck } from '@/lib/duplicates'
 
 export async function OPTIONS(request: Request) {
   return corsPreflight(request)
@@ -37,9 +38,11 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient()
 
-    const { data, error } = await supabase
-      .from('leads')
-      .insert({
+    // A repeat submission (same phone as an existing lead) lands in the
+    // "Check Duplicate" stage instead of "New Lead".
+    const { data: inserted, error } = await insertLeadWithDuplicateCheck(
+      supabase,
+      {
         first_name,
         last_name,
         email,
@@ -52,11 +55,12 @@ export async function POST(request: Request) {
         priority,
         eligibility_status: 'pending',
         contact_attempts: 0,
-      })
-      .select('id')
-      .single()
+      },
+      'id'
+    )
+    const data = inserted as unknown as { id: string } | null
 
-    if (error) {
+    if (error || !data) {
       console.error('Intake error:', error)
       return NextResponse.json(
         { error: 'Failed to save lead' },

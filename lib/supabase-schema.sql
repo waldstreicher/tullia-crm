@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS leads (
 
   -- Pipeline
   stage TEXT NOT NULL DEFAULT 'new_lead' CHECK (stage IN (
-    'new_lead', 'attempted_contact', 'contacted', 'eligibility_review',
+    'check_duplicate', 'new_lead', 'attempted_contact', 'contacted', 'eligibility_review',
     'eligible', 'ineligible', 'virtual_consult_scheduled', 'virtual_consult_completed',
     'procedure_scheduled', 'procedure_completed', 'lost'
   )),

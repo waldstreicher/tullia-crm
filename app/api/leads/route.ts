@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { insertLeadWithDuplicateCheck } from '@/lib/duplicates'
 
 export async function GET(request: Request) {
   const supabase = createServiceClient()
@@ -40,17 +41,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const { data, error } = await supabase
-      .from('leads')
-      .insert({
-        ...body,
-        stage: body.stage || 'new_lead',
-        priority: body.priority || 'medium',
-        eligibility_status: body.eligibility_status || 'pending',
-        contact_attempts: body.contact_attempts || 0,
-      })
-      .select()
-      .single()
+    // Same phone as an existing lead → "Check Duplicate" (only when the lead
+    // would otherwise start as "New Lead"; an explicitly chosen stage is kept).
+    const { data, error } = await insertLeadWithDuplicateCheck(supabase, {
+      ...body,
+      stage: body.stage || 'new_lead',
+      priority: body.priority || 'medium',
+      eligibility_status: body.eligibility_status || 'pending',
+      contact_attempts: body.contact_attempts || 0,
+    })
 
     if (error) {
       console.error('Error creating lead:', error)
