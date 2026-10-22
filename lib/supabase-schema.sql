@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS leads (
   last_name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
+  zip_code TEXT CHECK (zip_code IS NULL OR zip_code ~ '^[0-9]{5}$'),
   preferred_contact TEXT CHECK (preferred_contact IN ('phone', 'email')),
   areas_of_interest TEXT[] DEFAULT '{}',
   message TEXT,

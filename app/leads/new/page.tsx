@@ -15,6 +15,7 @@ export default function NewLeadPage() {
     last_name: '',
     email: '',
     phone: '',
+    zip_code: '',
     preferred_contact: '' as 'phone' | 'email' | '',
     areas_of_interest: [] as string[],
     message: '',
@@ -136,6 +137,22 @@ export default function NewLeadPage() {
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>ZIP Code *</label>
+              <input
+                type="text"
+                required
+                inputMode="numeric"
+                autoComplete="postal-code"
+                pattern="\d{5}"
+                maxLength={5}
+                title="Enter a 5-digit ZIP code"
+                placeholder="07601"
+                value={form.zip_code}
+                onChange={(e) => setForm((p) => ({ ...p, zip_code: e.target.value.replace(/\D/g, '').slice(0, 5) }))}
                 className={inputClass}
               />
             </div>

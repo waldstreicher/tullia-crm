@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { first_name, last_name, email, phone, preferred_contact, areas_of_interest, message, primary_goal } = body
+    const { first_name, last_name, email, phone, zip_code, preferred_contact, areas_of_interest, message, primary_goal } = body
 
     if (!first_name || !last_name || !email) {
       return NextResponse.json(
@@ -36,6 +36,13 @@ export async function POST(request: Request) {
     const fatReductionOnly = /fat/i.test(rawGoal) && !/(both|tighten)/i.test(rawGoal)
     const priority = fatReductionOnly ? 'high' : 'medium'
 
+    // 5-digit ZIP code. The website form requires it; a missing or malformed
+    // value is stored as empty rather than rejecting the request, so a lead is
+    // never lost (e.g. from a visitor on a cached copy of the old form).
+    const zipDigits = typeof zip_code === 'string' || typeof zip_code === 'number'
+      ? String(zip_code).trim().match(/^(\d{5})(-\d{4})?$/)?.[1] ?? null
+      : null
+
     const supabase = createServiceClient()
 
     // A repeat submission (same phone as an existing lead) lands in the
@@ -47,6 +54,7 @@ export async function POST(request: Request) {
         last_name,
         email,
         phone: phone || null,
+        zip_code: zipDigits,
         preferred_contact: preferred_contact || null,
         areas_of_interest: areas_of_interest || [],
         message: message || null,

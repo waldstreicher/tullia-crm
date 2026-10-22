@@ -79,11 +79,26 @@ export async function insertLeadWithDuplicateCheck(
   // 'check_duplicate' stage yet, never lose the lead — save it as a New Lead.
   if (result.error && flag && /stage/i.test(result.error.message)) {
     console.error('check_duplicate stage rejected; saving as new_lead:', result.error)
+    row = { ...row, stage: 'new_lead' }
+    result = await supabase.from('leads').insert(row).select(select).single()
+  }
+
+  // Safety net: if the zip_code column hasn't been added yet, save the lead
+  // without it rather than lose it (the ZIP is kept in the message instead).
+  if (result.error && 'zip_code' in row && /zip_code/i.test(result.error.message)) {
+    console.error('zip_code column missing; saving lead without it:', result.error)
+    const { zip_code, ...rest } = row
+    row = zip_code
+      ? { ...rest, message: [`[ZIP: ${zip_code}]`, rest.message].filter(Boolean).join('\n\n') }
+      : rest
     result = await supabase
       .from('leads')
-      .insert({ ...row, stage: 'new_lead' })
+      .insert({ ...row, stage: flag ? 'check_duplicate' : row.stage || 'new_lead' })
       .select(select)
       .single()
+    if (result.error && flag && /stage/i.test(result.error.message)) {
+      result = await supabase.from('leads').insert({ ...row, stage: 'new_lead' }).select(select).single()
+    }
   }
 
   const inserted = result.data as unknown as { id?: string } | null

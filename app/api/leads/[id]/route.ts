@@ -32,6 +32,14 @@ export async function PATCH(
   try {
     const body = await request.json()
 
+    if ('zip_code' in body) {
+      const zip = body.zip_code === null ? '' : String(body.zip_code).trim()
+      if (zip && !/^\d{5}$/.test(zip)) {
+        return NextResponse.json({ error: 'ZIP code must be 5 digits' }, { status: 400 })
+      }
+      body.zip_code = zip || null
+    }
+
     const { data, error } = await supabase
       .from('leads')
       .update(body)

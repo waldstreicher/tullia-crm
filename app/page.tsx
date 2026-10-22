@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   Users,
   UserPlus,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import LeadTable from '@/components/LeadTable'
+import DashboardCharts from '@/components/DashboardCharts'
+import { leadsHref } from '@/lib/lead-filters'
 import { createClient } from '@/lib/supabase-browser'
 import { getRole } from '@/lib/roles'
 import { STAGE_ORDER, STAGE_CONFIG, Priority, EligibilityStatus } from '@/lib/types'
@@ -24,14 +27,16 @@ function StatCard({
   label,
   value,
   color,
+  href,
 }: {
   icon: React.ElementType
   label: string
   value: number | string
   color: string
+  href?: string
 }) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-4">
+  const body = (
+    <>
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon size={22} />
       </div>
@@ -39,7 +44,19 @@ function StatCard({
         <p className="text-3xl font-semibold text-[#1A1A1A] tabular-nums">{value}</p>
         <p className="text-sm text-[#6B6B6B] mt-0.5">{label}</p>
       </div>
-    </div>
+    </>
+  )
+  const base = 'bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-4'
+  // Clickable for users (opens the matching leads); plain for observers.
+  return href ? (
+    <Link
+      href={href}
+      className={`${base} transition hover:border-[#C4956A]/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4956A]/50`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <div className={base}>{body}</div>
   )
 }
 
@@ -51,6 +68,7 @@ function BreakdownRow({
   barColor,
   labelNode,
   labelWidth = 'w-36',
+  href,
 }: {
   label: string
   count: number
@@ -58,10 +76,11 @@ function BreakdownRow({
   barColor: string
   labelNode?: React.ReactNode
   labelWidth?: string
+  href?: string
 }) {
   const pct = total > 0 ? (count / total) * 100 : 0
-  return (
-    <div className="flex items-center gap-3">
+  const content = (
+    <>
       <div className={`${labelWidth} shrink-0`}>
         {labelNode ?? <span className="text-sm text-[#1A1A1A]">{label}</span>}
       </div>
@@ -69,7 +88,18 @@ function BreakdownRow({
         <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="w-8 text-right text-sm font-medium text-[#1A1A1A] tabular-nums">{count}</span>
-    </div>
+    </>
+  )
+  return href ? (
+    <Link
+      href={href}
+      title={`Show ${label} leads`}
+      className="flex items-center gap-3 -mx-2 px-2 py-0.5 rounded-lg transition hover:bg-[#C4956A]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4956A]/50"
+    >
+      {content}
+    </Link>
+  ) : (
+    <div className="flex items-center gap-3">{content}</div>
   )
 }
 
@@ -125,6 +155,10 @@ export default function DashboardPage() {
   }, [])
 
   const show = (n?: number) => (loading || !metrics ? '—' : n ?? 0)
+  // Everything on the dashboard links to the matching leads — for users only.
+  // Observers can't open lead lists (patient details), so nothing is clickable for them.
+  const clickable = roleChecked && !isObserver
+  const link = (f: Parameters<typeof leadsHref>[0]) => (clickable ? leadsHref(f) : undefined)
   const total = metrics?.total ?? 0
 
   return (
@@ -145,15 +179,18 @@ export default function DashboardPage() {
 
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard icon={Users} label="Total Leads" value={show(metrics?.total)} color="bg-blue-50 text-blue-600" />
-          <StatCard icon={UserPlus} label="New This Week" value={show(metrics?.newThisWeek)} color="bg-[#C4956A]/10 text-[#C4956A]" />
-          <StatCard icon={CalendarClock} label="Follow Up Today" value={show(metrics?.followUpToday)} color="bg-orange-50 text-orange-600" />
-          <StatCard icon={AlertTriangle} label="Overdue Follow-Ups" value={show(metrics?.followUpOverdue)} color="bg-red-50 text-red-600" />
-          <StatCard icon={CalendarCheck} label="Procedures Scheduled" value={show(metrics?.proceduresScheduled)} color="bg-indigo-50 text-indigo-600" />
-          <StatCard icon={CheckCircle2} label="Procedures Completed" value={show(metrics?.proceduresCompleted)} color="bg-emerald-50 text-emerald-600" />
-          <StatCard icon={Video} label="Virtual Consults Scheduled" value={show(metrics?.virtualConsultsScheduled)} color="bg-teal-50 text-teal-600" />
-          <StatCard icon={UserX} label="Unassigned" value={show(metrics?.unassigned)} color="bg-gray-100 text-gray-500" />
+          <StatCard icon={Users} label="Total Leads" value={show(metrics?.total)} color="bg-blue-50 text-blue-600" href={link({})} />
+          <StatCard icon={UserPlus} label="New This Week" value={show(metrics?.newThisWeek)} color="bg-[#C4956A]/10 text-[#C4956A]" href={link({ created: 'last7' })} />
+          <StatCard icon={CalendarClock} label="Follow Up Today" value={show(metrics?.followUpToday)} color="bg-orange-50 text-orange-600" href={link({ followup: 'today' })} />
+          <StatCard icon={AlertTriangle} label="Overdue Follow-Ups" value={show(metrics?.followUpOverdue)} color="bg-red-50 text-red-600" href={link({ followup: 'overdue' })} />
+          <StatCard icon={CalendarCheck} label="Procedures Scheduled" value={show(metrics?.proceduresScheduled)} color="bg-indigo-50 text-indigo-600" href={link({ procedure: 'scheduled' })} />
+          <StatCard icon={CheckCircle2} label="Procedures Completed" value={show(metrics?.proceduresCompleted)} color="bg-emerald-50 text-emerald-600" href={link({ procedure: 'completed' })} />
+          <StatCard icon={Video} label="Virtual Consults Scheduled" value={show(metrics?.virtualConsultsScheduled)} color="bg-teal-50 text-teal-600" href={link({ consult: 'scheduled' })} />
+          <StatCard icon={UserX} label="Unassigned" value={show(metrics?.unassigned)} color="bg-gray-100 text-gray-500" href={link({ assigned: 'unassigned' })} />
         </div>
+
+        {/* Histograms: leads added + Meta ad spend */}
+        <DashboardCharts clickable={clickable} />
 
         {/* Pipeline breakdown */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
@@ -170,6 +207,7 @@ export default function DashboardPage() {
                 total={total}
                 barColor="bg-[#C4956A]"
                 labelWidth="w-48"
+                href={link({ stage })}
                 labelNode={
                   <span className={`inline-block whitespace-nowrap text-xs font-medium px-2.5 py-1 rounded-full ${STAGE_CONFIG[stage].color}`}>
                     {STAGE_CONFIG[stage].label}
@@ -184,13 +222,13 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           <BreakdownCard title="Priority">
             {PRIORITY_META.map((p) => (
-              <BreakdownRow key={p.key} label={p.label} count={metrics?.byPriority?.[p.key] ?? 0} total={total} barColor={p.color} />
+              <BreakdownRow key={p.key} label={p.label} count={metrics?.byPriority?.[p.key] ?? 0} total={total} barColor={p.color} href={link({ priority: p.key })} />
             ))}
           </BreakdownCard>
 
           <BreakdownCard title="Eligibility">
             {ELIGIBILITY_META.map((e) => (
-              <BreakdownRow key={e.key} label={e.label} count={metrics?.byEligibility?.[e.key] ?? 0} total={total} barColor={e.color} />
+              <BreakdownRow key={e.key} label={e.label} count={metrics?.byEligibility?.[e.key] ?? 0} total={total} barColor={e.color} href={link({ eligibility: e.key })} />
             ))}
           </BreakdownCard>
 
@@ -205,6 +243,7 @@ export default function DashboardPage() {
                   count={s.count}
                   total={total}
                   barColor="bg-[#C4956A]"
+                  href={link({ source: s.source })}
                 />
               ))
             )}

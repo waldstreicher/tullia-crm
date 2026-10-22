@@ -41,6 +41,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
+    // ZIP code is required on the Add Lead form; enforce the format here too.
+    if (body.zip_code !== undefined && body.zip_code !== null && body.zip_code !== '') {
+      if (!/^\d{5}$/.test(String(body.zip_code).trim())) {
+        return NextResponse.json({ error: 'ZIP code must be 5 digits' }, { status: 400 })
+      }
+      body.zip_code = String(body.zip_code).trim()
+    } else {
+      body.zip_code = null
+    }
+
     // Same phone as an existing lead → "Check Duplicate" (only when the lead
     // would otherwise start as "New Lead"; an explicitly chosen stage is kept).
     const { data, error } = await insertLeadWithDuplicateCheck(supabase, {

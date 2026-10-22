@@ -1,4 +1,5 @@
 import { Lead, PipelineStage, Priority, EligibilityStatus, STAGE_ORDER } from './types'
+import { LeadFilter, matchesLeadFilter } from './lead-filters'
 
 // Aggregate, PII-free dashboard metrics. Shared by the /api/metrics endpoint
 // (dashboard) and the daily cron digest email.
@@ -19,9 +20,6 @@ export interface DashboardMetrics {
 
 export function computeMetrics(leads: Lead[]): DashboardMetrics {
   const now = new Date()
-  const weekAgo = new Date(now)
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  const today = now.toISOString().split('T')[0]
 
   const byStage = Object.fromEntries(
     STAGE_ORDER.map((s) => [s, 0])
@@ -47,21 +45,19 @@ export function computeMetrics(leads: Lead[]): DashboardMetrics {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count)
 
+  // Same predicates the All Leads page uses when a tile is clicked, so the
+  // tile's number always matches the list it opens.
+  const count = (f: LeadFilter) => leads.filter((l) => matchesLeadFilter(l, f, now)).length
+
   return {
     total: leads.length,
-    newThisWeek: leads.filter((l) => new Date(l.created_at) >= weekAgo).length,
-    followUpToday: leads.filter((l) => l.next_follow_up_date === today).length,
-    followUpOverdue: leads.filter(
-      (l) => l.next_follow_up_date && l.next_follow_up_date < today
-    ).length,
-    unassigned: leads.filter((l) => !l.assigned_to).length,
-    proceduresScheduled: leads.filter(
-      (l) => l.procedure_scheduled_date && !l.procedure_completed_at
-    ).length,
-    proceduresCompleted: leads.filter((l) => l.procedure_completed_at).length,
-    virtualConsultsScheduled: leads.filter(
-      (l) => l.virtual_consult_scheduled_at && !l.virtual_consult_completed_at
-    ).length,
+    newThisWeek: count({ created: 'last7' }),
+    followUpToday: count({ followup: 'today' }),
+    followUpOverdue: count({ followup: 'overdue' }),
+    unassigned: count({ assigned: 'unassigned' }),
+    proceduresScheduled: count({ procedure: 'scheduled' }),
+    proceduresCompleted: count({ procedure: 'completed' }),
+    virtualConsultsScheduled: count({ consult: 'scheduled' }),
     byStage,
     byPriority,
     byEligibility,

@@ -25,6 +25,7 @@ export interface Lead {
   last_name: string
   email: string
   phone?: string
+  zip_code?: string
   preferred_contact?: 'phone' | 'email'
   areas_of_interest?: string[]
   message?: string

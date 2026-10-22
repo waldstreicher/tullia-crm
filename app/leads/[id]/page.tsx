@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Trash2,
   TriangleAlert,
+  MapPin,
 } from 'lucide-react'
 
 // ─── Note Icon Map ───────────────────────────────────────────────────────────
@@ -73,6 +74,101 @@ function useAutoSave(leadId: string, field: string, value: unknown, delay = 800)
   }, [leadId, field, value, delay])
 
   return saving
+}
+
+// ─── ZIP code (inline edit) ──────────────────────────────────────────────────
+// Website consult requests include a required 5-digit ZIP; older leads and
+// phone/manual leads may not have one, so staff can add or correct it here.
+function ZipCodeField({
+  leadId,
+  value,
+  onSaved,
+}: {
+  leadId: string
+  value?: string | null
+  onSaved: (zip: string | null) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value || '')
+  const [err, setErr] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    const zip = draft.trim()
+    if (zip && !/^\d{5}$/.test(zip)) {
+      setErr('Enter a 5-digit ZIP code')
+      return
+    }
+    setSaving(true)
+    setErr('')
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zip_code: zip || null }),
+      })
+      if (!res.ok) throw new Error()
+      onSaved(zip || null)
+      setEditing(false)
+    } catch {
+      setErr('Could not save ZIP code')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+        <MapPin size={14} className="text-amber-700" />
+      </div>
+      {editing ? (
+        <div>
+          <div className="flex items-center gap-2">
+            <input
+              autoFocus
+              inputMode="numeric"
+              maxLength={5}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value.replace(/\D/g, '').slice(0, 5))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') save()
+                if (e.key === 'Escape') { setDraft(value || ''); setErr(''); setEditing(false) }
+              }}
+              placeholder="ZIP"
+              className="w-24 px-2 py-1 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C4956A]/30 focus:border-[#C4956A]"
+            />
+            <button
+              onClick={save}
+              disabled={saving}
+              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[#C4956A] text-white hover:bg-[#B3845A] disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              onClick={() => { setDraft(value || ''); setErr(''); setEditing(false) }}
+              className="text-xs text-[#6B6B6B] hover:text-[#1A1A1A]"
+            >
+              Cancel
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-600 mt-1">{err}</p>}
+        </div>
+      ) : (
+        <button
+          onClick={() => { setDraft(value || ''); setEditing(true) }}
+          className="text-sm text-[#1A1A1A] hover:text-[#C4956A]"
+          title="Edit ZIP code"
+        >
+          {value ? (
+            <>ZIP {value}</>
+          ) : (
+            <span className="text-[#6B6B6B] italic">Add ZIP code</span>
+          )}
+        </button>
+      )}
+    </div>
+  )
 }
 
 // ─── Stage Stepper ────────────────────────────────────────────────────────────
@@ -555,6 +651,11 @@ export default function LeadDetailPage() {
                     )}
                   </div>
                 )}
+                <ZipCodeField
+                  leadId={leadId}
+                  value={lead.zip_code}
+                  onSaved={(zip) => setLead((prev) => (prev ? { ...prev, zip_code: zip ?? undefined } : prev))}
+                />
                 {lead.areas_of_interest && lead.areas_of_interest.length > 0 && (
                   <div className="pt-2">
                     <p className="text-xs text-[#6B6B6B] mb-2">Areas of Interest</p>
