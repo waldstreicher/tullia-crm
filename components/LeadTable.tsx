@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, ChevronUp, ChevronDown, X } from 'lucide-react'
 import { Lead, PipelineStage, Priority, STAGE_CONFIG } from '@/lib/types'
 import { createClient } from '@/lib/supabase-browser'
+import { LeadFilter, matchesLeadFilter, describeLeadFilter } from '@/lib/lead-filters'
+import { easternDate } from '@/lib/dates'
 
 type SortField = 'created_at' | 'first_name' | 'stage' | 'priority' | 'next_follow_up_date'
 type SortDir = 'asc' | 'desc'
@@ -16,7 +18,16 @@ const PRIORITY_COLORS: Record<Priority, string> = {
   low: 'text-green-600',
 }
 
-export default function LeadTable() {
+// `filter` comes from the URL when arriving from a dashboard tile/bar
+// (/leads?stage=…, ?created=last7, ?from=…&to=…). Stage and priority preset
+// the dropdowns; the rest are shown as a removable "Showing:" chip.
+export default function LeadTable({
+  filter = {},
+  onClearFilter,
+}: {
+  filter?: LeadFilter
+  onClearFilter?: () => void
+} = {}) {
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>([])
   const [filtered, setFiltered] = useState<Lead[]>([])
@@ -25,8 +36,12 @@ export default function LeadTable() {
 
   // Filters
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<PipelineStage | ''>('')
-  const [priorityFilter, setPriorityFilter] = useState<Priority | ''>('')
+  const [stageFilter, setStageFilter] = useState<PipelineStage | ''>(filter.stage || '')
+  const [priorityFilter, setPriorityFilter] = useState<Priority | ''>(filter.priority || '')
+  // Dashboard filters other than stage/priority, applied to the fetched list.
+  const { stage: _s, priority: _p, ...extraFilter } = filter
+  const extraKey = JSON.stringify(extraFilter)
+  const chips = describeLeadFilter(extraFilter)
   const [assignedFilter, setAssignedFilter] = useState('')
 
   // Sorting
@@ -96,7 +111,9 @@ export default function LeadTable() {
 
   // Sort
   useEffect(() => {
-    const sorted = [...leads].sort((a, b) => {
+    const extra: LeadFilter = JSON.parse(extraKey)
+    const now = new Date()
+    const sorted = leads.filter((l) => matchesLeadFilter(l, extra, now)).sort((a, b) => {
       let aVal: string | number = ''
       let bVal: string | number = ''
 
@@ -127,7 +144,7 @@ export default function LeadTable() {
       sorted.sort((a, b) => mine(a) - mine(b))
     }
     setFiltered(sorted)
-  }, [leads, sortField, sortDir, currentEmail])
+  }, [leads, sortField, sortDir, currentEmail, extraKey])
 
   function handleSort(field: SortField) {
     if (sortField === field) {
@@ -215,6 +232,25 @@ export default function LeadTable() {
         </span>
       </div>
 
+      {chips.length > 0 && (
+        <div className="px-4 py-2.5 border-b border-gray-100 bg-[#C4956A]/5 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-[#6B6B6B]">Showing:</span>
+          {chips.map((c) => (
+            <span key={c} className="text-xs font-medium text-[#1A1A1A] bg-white border border-[#C4956A]/30 px-2.5 py-1 rounded-full">
+              {c}
+            </span>
+          ))}
+          {onClearFilter && (
+            <button
+              onClick={onClearFilter}
+              className="inline-flex items-center gap-1 text-xs text-[#6B6B6B] hover:text-[#1A1A1A] ml-1"
+            >
+              <X size={12} /> Clear
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Table */}
       {loading ? (
         <div className="p-12 text-center text-[#6B6B6B]">Loading leads...</div>
@@ -259,7 +295,7 @@ export default function LeadTable() {
             <tbody>
               {filtered.map((lead) => {
                 const stageConf = STAGE_CONFIG[lead.stage]
-                const today = new Date().toISOString().split('T')[0]
+                const today = easternDate(new Date())
                 const isOverdue = lead.next_follow_up_date && lead.next_follow_up_date < today
                 const isDueToday = lead.next_follow_up_date === today
 

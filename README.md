@@ -25,6 +25,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 RESEND_API_KEY=your_resend_api_key
 RESEND_FROM=Tuli CRM <dashboard@your-verified-domain.com>
 CRON_SECRET=any_long_random_string
+META_ACCESS_TOKEN=system_user_token_with_ads_read
+META_AD_ACCOUNT_ID=1234567890
 
 # Admins who can manage roles on the in-app Team page (comma-separated)
 ADMIN_EMAILS=you@example.com
@@ -84,6 +86,31 @@ the aggregate dashboard (no PII) and emails it to every Observer via **Resend**.
    for winter, or leave as-is).
 
 > Vercel Hobby plans run cron jobs once per day, which is exactly what this needs.
+
+## 8. Dashboard Histograms & Meta Ad Spend
+
+The dashboard shows two histograms (Day / Week / Month, Eastern time): leads
+added, and Meta ad spend, either as total spend or as cost per **website** lead
+(spend ÷ leads whose source is the website consult form). Every tile, breakdown
+row and bar links to the matching leads on All Leads (users only; observers
+see the same numbers but nothing is clickable).
+
+Spend comes from the Meta Marketing API (Insights, account level, one row per
+day) and is stored in `ad_spend_daily`. It is synced nightly by
+`/api/cron/meta-sync` and again whenever someone opens the dashboard and the last
+sync is more than 3 hours old. The first sync back-fills ~13 months.
+
+**One-time setup**
+
+1. Run `lib/migrations/2026-10-22-meta-ad-spend.sql` in the Supabase SQL editor.
+2. In Meta Business Settings → **Users → System users**, create (or pick) a
+   system user, assign it the ad account with **View performance** access, and
+   generate a token with the **ads_read** permission.
+3. In Vercel → **Settings → Environment Variables**, add `META_ACCESS_TOKEN`
+   (that token) and `META_AD_ACCOUNT_ID` (the ad account number from Ads Manager;
+   the `act_` prefix is optional). Optional: `META_APP_SECRET` if your Meta app
+   requires `appsecret_proof`, and `META_API_VERSION` (defaults to `v26.0`).
+4. Redeploy. The spend chart fills in on the next dashboard load.
 
 ---
 
