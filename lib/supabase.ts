@@ -5,6 +5,12 @@ import { cookies } from 'next/headers'
 // NOTE: This module is server-only (it imports next/headers). Client Components
 // should import the browser client from '@/lib/supabase-browser' instead.
 
+// Next.js 14 caches fetch() responses in its Data Cache by default — including
+// the requests supabase-js makes — so a route handler that doesn't read the
+// request (e.g. GET /api/metrics) could keep serving an old snapshot of the
+// database. Every server-side Supabase request opts out of that cache.
+const noStoreFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: 'no-store' })
+
 // Server-side client with the service role key (for API routes).
 // All env vars are read lazily inside functions so module init doesn't fail at build time.
 export function createServiceClient() {
@@ -20,6 +26,7 @@ export function createServiceClient() {
       autoRefreshToken: false,
       persistSession: false,
     },
+    global: { fetch: noStoreFetch },
   })
 }
 
@@ -33,6 +40,7 @@ export function createSupabaseServerClient() {
   const cookieStore = cookies()
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
+    global: { fetch: noStoreFetch },
     cookies: {
       getAll() {
         return cookieStore.getAll()
