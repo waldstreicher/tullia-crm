@@ -15,6 +15,8 @@ export const KNOWLEDGE = `
 - It is a FAT REDUCTION procedure. It is NOT a skin tightening treatment. TuLi does not tighten, lift, or remove loose skin. Treating fat beneath skin that has lost its elasticity will not make that skin firmer and can make laxity more noticeable.
 - TuLi permanently treats fat cells, delivering sculpted, natural-looking contours that last. It reshapes areas that don't respond to diet and exercise.
 - The site describes it as a safer, faster, and more effective alternative to both traditional liposuction and non-invasive body contouring.
+- TuLi is not a weight loss procedure; it destroys fat cells for body contouring. The degree of effect depends on your baseline and the degree to which the doctor treats you. The assistant does not give a specific number of pounds or inches.
+- Regulatory status (use this exact framing): TuLi is a procedural technique developed by Dr. Moskovitz. All the equipment he uses is cleared or registered through the FDA. Never say "TuLi is FDA approved" — procedures themselves are not FDA-approved; the equipment is cleared or registered.
 
 ## The procedure
 - The complete procedure takes about 15 minutes in the office.
@@ -25,6 +27,11 @@ export const KNOWLEDGE = `
 - No special post-operative care: no compression garments and no drainage tubes.
 - Sessions required: one.
 - Performed at Moskovitz Plastic Surgery PLLC, a fully accredited surgery center approved by Quad A.
+
+## What to expect afterward (approved by the practice)
+- Patients are typically swollen for a few days and may experience skin numbness over the treated area for a few weeks.
+- Patients start to see results at 3 months, with full treatment effect at 6 months.
+- The assistant does not have complication rates or statistics; for a full discussion of risks as they apply to an individual, Dr. Moskovitz covers that at a consultation.
 
 ## How it compares (the site's comparison table)
 | Feature | TuLi | Traditional liposuction | Non-invasive contouring (e.g., CoolSculpting) |
@@ -57,6 +64,7 @@ May NOT be the right fit if you:
 
 ## Pricing
 - The assistant does not quote prices. Pricing is discussed with the practice's staff — request a consultation or call.
+- The practice offers several financing options to meet your needs. Details are discussed with the staff; the assistant does not describe terms, rates, or providers.
 
 ## About the developer
 - Dr. Martin Moskovitz, MD, FACS. Board Certified in Plastic Surgery and in General Surgery. Fellow, American College of Surgeons. 30+ years of experience in Plastic Surgery.
@@ -70,7 +78,7 @@ May NOT be the right fit if you:
 - Phone: (201) 225-1101.
 
 ## NOT on the site — the assistant must not invent these
-- Specific prices or financing; exact recovery timelines in days/weeks; how long until results show; how many pounds or inches are reduced; risks, complications, or side-effect rates; whether areas other than those listed can be treated; insurance coverage; office hours; parking.
+- Specific prices, or financing terms/rates/providers; a specific number of pounds or inches; complication rates or statistics beyond the typical swelling and numbness above; whether areas other than those listed can be treated; insurance coverage; office hours; parking; whether TuLi itself is "FDA approved" (only the equipment framing above).
 `.trim()
 
 export const SYSTEM_PROMPT = `You are the TuLi Assistant, an automated assistant on the TuLi website (www.tumescentlipolysis.com) for Moskovitz Plastic Surgery in Spring Valley, NY. You help prospective patients understand the TuLi (Tumescent Lipolysis) procedure.
