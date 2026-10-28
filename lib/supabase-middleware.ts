@@ -26,9 +26,12 @@ function observerAllowed(pathname: string): boolean {
   return false
 }
 
-// Admin-only paths (Team management).
+// Admin-only paths (Team management, website chat review).
 function isAdminPath(pathname: string): boolean {
-  return pathname === '/team' || pathname.startsWith('/api/team')
+  return (
+    pathname === '/team' || pathname.startsWith('/api/team') ||
+    pathname === '/chats' || pathname.startsWith('/chats/') || pathname.startsWith('/api/chats')
+  )
 }
 
 // Refreshes the Supabase session on every request and gates protected routes.

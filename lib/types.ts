@@ -153,3 +153,34 @@ export const APPOINTMENT_STATUS_CONFIG: Record<AppointmentStatus, { label: strin
   no_show: { label: 'No-Show', color: 'bg-red-100 text-red-800' },
   cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600' },
 }
+
+// ─── Website chatbot ─────────────────────────────────────────────────────────
+export interface ChatSession {
+  id: string
+  created_at: string
+  last_message_at: string
+  page?: string | null
+  language?: string | null
+  message_count: number
+  flagged: boolean
+  reviewed_at?: string | null
+  reviewed_by?: string | null
+}
+
+export interface ChatMessage {
+  id: string
+  created_at: string
+  session_id: string
+  role: 'user' | 'assistant'
+  content: string
+  model?: string | null
+  input_tokens?: number | null
+  cache_read_tokens?: number | null
+  output_tokens?: number | null
+  stop_reason?: string | null
+  latency_ms?: number | null
+  flagged: boolean
+  flag_note?: string | null
+  flagged_by?: string | null
+  flagged_at?: string | null
+}

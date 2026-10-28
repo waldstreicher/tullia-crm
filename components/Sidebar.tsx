@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, UserPlus, LogOut, Bell, Shield, CalendarCheck, CalendarClock } from 'lucide-react'
+import { LayoutDashboard, Users, UserPlus, LogOut, Bell, Shield, CalendarCheck, CalendarClock, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { getRole, type Role } from '@/lib/roles'
 
@@ -74,7 +74,12 @@ export default function Sidebar() {
           { href: '/availability', icon: CalendarClock, label: 'Availability' },
         ]
       : []),
-    ...(isAdmin ? [{ href: '/team', icon: Shield, label: 'Team' }] : []),
+    ...(isAdmin
+      ? [
+          { href: '/chats', icon: MessageSquare, label: 'Chats' },
+          { href: '/team', icon: Shield, label: 'Team' },
+        ]
+      : []),
   ]
 
   return (
