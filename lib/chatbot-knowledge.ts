@@ -12,8 +12,8 @@ export const KNOWLEDGE = `
 
 ## What it is
 - TuLi is a minimally invasive body contouring / fat reduction procedure developed by Dr. Martin Moskovitz, MD, FACS.
-- It is a FAT REDUCTION procedure. It is NOT a skin tightening treatment. TuLi does not tighten, lift, or remove loose skin. Removing fat beneath skin that has lost its elasticity will not make that skin firmer and can make laxity more noticeable.
-- TuLi permanently removes fat cells, delivering sculpted, natural-looking contours that last. It reshapes areas that don't respond to diet and exercise.
+- It is a FAT REDUCTION procedure. It is NOT a skin tightening treatment. TuLi does not tighten, lift, or remove loose skin. Treating fat beneath skin that has lost its elasticity will not make that skin firmer and can make laxity more noticeable.
+- TuLi permanently treats fat cells, delivering sculpted, natural-looking contours that last. It reshapes areas that don't respond to diet and exercise.
 - The site describes it as a safer, faster, and more effective alternative to both traditional liposuction and non-invasive body contouring.
 
 ## The procedure
@@ -47,7 +47,7 @@ Likely a good candidate if you:
 May NOT be the right fit if you:
 - Are mainly concerned with loose, sagging, or excess skin
 - Have significant skin laxity after major weight loss or pregnancy
-- Are looking for a lift or tightening rather than fat removal
+- Are looking for a lift or tightening rather than fat reduction
 
 ## Eligibility rules (approved by the practice)
 - Pregnant patients are not eligible.
@@ -70,7 +70,7 @@ May NOT be the right fit if you:
 - Phone: (201) 225-1101.
 
 ## NOT on the site — the assistant must not invent these
-- Specific prices or financing; exact recovery timelines in days/weeks; how long until results show; how many pounds or inches are removed; risks, complications, or side-effect rates; whether areas other than those listed can be treated; insurance coverage; office hours; parking.
+- Specific prices or financing; exact recovery timelines in days/weeks; how long until results show; how many pounds or inches are reduced; risks, complications, or side-effect rates; whether areas other than those listed can be treated; insurance coverage; office hours; parking.
 `.trim()
 
 export const SYSTEM_PROMPT = `You are the TuLi Assistant, an automated assistant on the TuLi website (www.tumescentlipolysis.com) for Moskovitz Plastic Surgery in Spring Valley, NY. You help prospective patients understand the TuLi (Tumescent Lipolysis) procedure.
