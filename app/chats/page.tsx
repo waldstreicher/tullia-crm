@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Flag, CheckCircle2, MessageSquare, Bot, User } from 'lucide-react'
+import { Flag, CheckCircle2, MessageSquare, Bot, User, Archive, ArchiveRestore } from 'lucide-react'
 import AppLayout from '@/components/AppLayout'
 import { ChatSession, ChatMessage } from '@/lib/types'
 
@@ -12,6 +12,7 @@ type SessionRow = ChatSession & { preview: string }
 // mark sessions reviewed.
 export default function ChatsPage() {
   const [sessions, setSessions] = useState<SessionRow[]>([])
+  const [view, setView] = useState<'active' | 'archived'>('active')
   const [onlyFlagged, setOnlyFlagged] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -26,7 +27,7 @@ export default function ChatsPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/chats?limit=200${onlyFlagged ? '&flagged=1' : ''}`)
+      const res = await fetch(`/api/chats?limit=200&view=${view}${onlyFlagged ? '&flagged=1' : ''}`)
       if (res.status === 403) throw new Error('Admins only')
       if (!res.ok) throw new Error('Could not load chats')
       setSessions(await res.json())
@@ -35,7 +36,7 @@ export default function ChatsPage() {
     } finally {
       setLoading(false)
     }
-  }, [onlyFlagged])
+  }, [view, onlyFlagged])
 
   const loadOne = useCallback(async (id: string) => {
     const res = await fetch(`/api/chats/${id}`)
@@ -61,6 +62,24 @@ export default function ChatsPage() {
       setFlagging('')
       setFlagNote('')
       await loadOne(activeId)
+      await loadList()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function setArchived(archived: boolean) {
+    if (!activeId) return
+    setBusy(true)
+    try {
+      await fetch(`/api/chats/${activeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived }),
+      })
+      // The session leaves the current view; clear the transcript pane.
+      setActiveId('')
+      setActive(null)
       await loadList()
     } finally {
       setBusy(false)
@@ -103,10 +122,23 @@ export default function ChatsPage() {
               Conversations with the TuLi Assistant. Flag any inaccurate answer and note what it should have said.
             </p>
           </div>
-          <label className="flex items-center gap-2 text-sm text-[#6B6B6B] cursor-pointer">
-            <input type="checkbox" checked={onlyFlagged} onChange={(e) => setOnlyFlagged(e.target.checked)} className="rounded border-gray-300 text-[#C4956A] focus:ring-[#C4956A]" />
-            Flagged only
-          </label>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-1 bg-white border border-gray-100 rounded-xl p-1">
+              {(['active', 'archived'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => { setView(v); setActiveId(''); setActive(null) }}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition capitalize ${view === v ? 'bg-[#C4956A] text-white' : 'text-[#6B6B6B] hover:bg-gray-100'}`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-sm text-[#6B6B6B] cursor-pointer">
+              <input type="checkbox" checked={onlyFlagged} onChange={(e) => setOnlyFlagged(e.target.checked)} className="rounded border-gray-300 text-[#C4956A] focus:ring-[#C4956A]" />
+              Flagged only
+            </label>
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
@@ -117,7 +149,7 @@ export default function ChatsPage() {
             {loading ? (
               <p className="p-6 text-sm text-[#6B6B6B]">Loading...</p>
             ) : sessions.length === 0 ? (
-              <p className="p-6 text-sm text-[#6B6B6B]">No conversations yet.</p>
+              <p className="p-6 text-sm text-[#6B6B6B]">{view === 'archived' ? 'Nothing archived yet.' : 'No conversations yet.'}</p>
             ) : (
               <ul className="divide-y divide-gray-50 max-h-[calc(100vh-12rem)] overflow-y-auto">
                 {sessions.map((s) => (
@@ -159,11 +191,22 @@ export default function ChatsPage() {
                       <span className="ml-2 text-green-700">Reviewed by {active.session.reviewed_by} {fmt(active.session.reviewed_at)}</span>
                     )}
                   </div>
-                  {!active.session.reviewed_at && (
-                    <button onClick={markReviewed} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-[#1A1A1A] hover:bg-gray-200 transition disabled:opacity-50">
-                      <CheckCircle2 size={14} /> Mark reviewed
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {!active.session.reviewed_at && !active.session.archived_at && (
+                      <button onClick={markReviewed} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-[#1A1A1A] hover:bg-gray-200 transition disabled:opacity-50">
+                        <CheckCircle2 size={14} /> Mark reviewed
+                      </button>
+                    )}
+                    {active.session.archived_at ? (
+                      <button onClick={() => setArchived(false)} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-[#1A1A1A] hover:bg-gray-200 transition disabled:opacity-50">
+                        <ArchiveRestore size={14} /> Restore
+                      </button>
+                    ) : (
+                      <button onClick={() => setArchived(true)} disabled={busy} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1A1A1A] text-white hover:bg-black transition disabled:opacity-50">
+                        <Archive size={14} /> Archive
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-5 space-y-4">
                   {active.messages.map((m) => (

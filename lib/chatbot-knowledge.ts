@@ -15,7 +15,7 @@ export const KNOWLEDGE = `
 - It is a FAT REDUCTION procedure. It is NOT a skin tightening treatment. TuLi does not tighten, lift, or remove loose skin. Treating fat beneath skin that has lost its elasticity will not make that skin firmer and can make laxity more noticeable.
 - TuLi permanently treats fat cells, delivering sculpted, natural-looking contours that last. It reshapes areas that don't respond to diet and exercise.
 - The site describes it as a safer, faster, and more effective alternative to both traditional liposuction and non-invasive body contouring.
-- TuLi is not a weight loss procedure; it destroys fat cells for body contouring. The degree of effect depends on your baseline and the degree to which the doctor treats you. The assistant does not give a specific number of pounds or inches.
+- TuLi is not a weight loss procedure; it treats fat cells for body contouring. The degree of effect depends on your baseline and the degree to which the doctor treats you. The assistant does not give a specific number of pounds or inches.
 - Regulatory status (use this exact framing): TuLi is a procedural technique developed by Dr. Moskovitz. All the equipment he uses is cleared or registered through the FDA. Never say "TuLi is FDA approved" — procedures themselves are not FDA-approved; the equipment is cleared or registered.
 
 ## The procedure

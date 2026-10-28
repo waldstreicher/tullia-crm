@@ -22,11 +22,12 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
 // PATCH { message_id, flagged: boolean, flag_note?: string }  → flag/unflag one answer
 // PATCH { reviewed: true }                                   → mark the session reviewed
+// PATCH { archived: boolean }                                → move to / out of Archived
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const caller = await getCaller()
   if (!caller?.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  let body: { message_id?: string; flagged?: boolean; flag_note?: string; reviewed?: boolean }
+  let body: { message_id?: string; flagged?: boolean; flag_note?: string; reviewed?: boolean; archived?: boolean }
   try {
     body = await request.json()
   } catch {
@@ -35,6 +36,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   const db = createServiceClient()
   const now = new Date().toISOString()
+
+  if (typeof body.archived === 'boolean') {
+    const { error } = await db
+      .from('chat_sessions')
+      .update(body.archived ? { archived_at: now, archived_by: caller.name } : { archived_at: null, archived_by: null })
+      .eq('id', params.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
 
   if (body.reviewed) {
     const { error } = await db

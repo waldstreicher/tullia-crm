@@ -19,6 +19,9 @@ export async function GET(request: Request) {
     .select('*')
     .order('last_message_at', { ascending: false })
     .limit(limit)
+  // Active (default) and archived are separate views.
+  if (p.get('view') === 'archived') q = q.not('archived_at', 'is', null)
+  else q = q.is('archived_at', null)
   if (p.get('flagged') === '1') q = q.eq('flagged', true)
   const { data: sessions, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

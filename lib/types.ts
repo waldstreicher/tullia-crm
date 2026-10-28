@@ -165,6 +165,8 @@ export interface ChatSession {
   flagged: boolean
   reviewed_at?: string | null
   reviewed_by?: string | null
+  archived_at?: string | null
+  archived_by?: string | null
 }
 
 export interface ChatMessage {
