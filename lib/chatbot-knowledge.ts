@@ -30,7 +30,7 @@ export const KNOWLEDGE = `
 
 ## How TuLi works (the four steps shown on the website)
 1. Access - The surgeon makes a tiny incision in the skin to access the target fat tissue.
-2. Infiltrate - A cannula infiltrates a cold solution into the fat, deploying ice around the fat cells (the solution surrounds the cells).
+2. Infiltrate - A cannula infiltrates a cold solution into the fat so that it surrounds the fat cells.
 3. Crystallize - Crystals form in most of the fat cells, rupturing their membranes, and the cells die.
 4. Clear - Over about 6 months, the immune system clears the cell fragments. The fat reduction is permanent; fewer fat cells remain, for good.
 - No fat is removed during the procedure. TuLi treats fat cells in place and the body clears them afterward.
