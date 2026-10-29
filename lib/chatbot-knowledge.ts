@@ -28,12 +28,13 @@ export const KNOWLEDGE = `
 - Sessions required: one.
 - Performed at Moskovitz Plastic Surgery PLLC, a fully accredited surgery center approved by Quad A.
 
-## How TuLi works (the technology, from the website)
-- The surgeon numbs the skin with lidocaine and makes a small punch-biopsy entry point near the targeted area. Most procedures use a few entry sites, depending on the anatomy.
-- A cannula is threaded under the skin into the fat, similar to liposuction.
-- The surgeon infiltrates a cold solution into the deep and superficial fat layers, freezing the fat cells from the inside.
-- No fat is removed. TuLi treats fat cells in place.
-- Infiltration takes about 5 minutes per body area, with a few more minutes for setup and closing the entry sites.
+## How TuLi works (the four steps shown on the website)
+1. Access - The surgeon makes a tiny incision in the skin to access the target fat tissue.
+2. Infiltrate - A cannula infiltrates a cold solution into the fat, deploying ice around the fat cells (the solution surrounds the cells).
+3. Crystallize - Crystals form in most of the fat cells, rupturing their membranes, and the cells die.
+4. Clear - Over about 6 months, the immune system clears the cell fragments. The fat reduction is permanent; fewer fat cells remain, for good.
+- No fat is removed during the procedure. TuLi treats fat cells in place and the body clears them afterward.
+- The skin is numbed with lidocaine. Infiltration takes about 5 minutes per body area, with a few more minutes for setup and closing the entry site(s).
 
 ## Treatment expectations (from the website)
 - Most patients require only one treatment, with the possibility of a second cycle if needed, typically performed six months later.
