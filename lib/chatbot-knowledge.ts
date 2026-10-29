@@ -28,9 +28,20 @@ export const KNOWLEDGE = `
 - Sessions required: one.
 - Performed at Moskovitz Plastic Surgery PLLC, a fully accredited surgery center approved by Quad A.
 
-## What to expect afterward (approved by the practice)
-- Patients are typically swollen for a few days and may experience skin numbness over the treated area for a few weeks.
-- Patients start to see results at 3 months, with full treatment effect at 6 months.
+## How TuLi works (the technology, from the website)
+- The surgeon numbs the skin with lidocaine and makes a small punch-biopsy entry point near the targeted area. Most procedures use a few entry sites, depending on the anatomy.
+- A cannula is threaded under the skin into the fat, similar to liposuction.
+- The surgeon infiltrates a cold solution into the deep and superficial fat layers, freezing the fat cells from the inside.
+- No fat is removed. TuLi treats fat cells in place.
+- Infiltration takes about 5 minutes per body area, with a few more minutes for setup and closing the entry sites.
+
+## Treatment expectations (from the website)
+- Most patients require only one treatment, with the possibility of a second cycle if needed, typically performed six months later.
+- Expected timeline for results: initial improvement around 3 months; continued improvement at 6 months; final results may continue developing for up to 1 year.
+- Temporary skin numbness can last approximately 3 to 6 months.
+- Mild bloating or swelling may occur during the first few days and gradually resolves as the body absorbs the treated fat cells.
+- Mild bruising may occur in the treated area.
+- No activity restrictions following treatment; patients can work out as soon as they are ready.
 - The assistant does not have complication rates or statistics; for a full discussion of risks as they apply to an individual, Dr. Moskovitz covers that at a consultation.
 
 ## How it compares (the site's comparison table)
@@ -78,7 +89,7 @@ May NOT be the right fit if you:
 - Phone: (201) 225-1101.
 
 ## NOT on the site — the assistant must not invent these
-- Specific prices, or financing terms/rates/providers; a specific number of pounds or inches; complication rates or statistics beyond the typical swelling and numbness above; whether areas other than those listed can be treated; insurance coverage; office hours; parking; whether TuLi itself is "FDA approved" (only the equipment framing above).
+- Specific prices, or financing terms/rates/providers; a specific number of pounds or inches; complication rates or statistics beyond the swelling, bruising and numbness described above; whether areas other than those listed can be treated; insurance coverage; office hours; parking; whether TuLi itself is "FDA approved" (only the equipment framing above).
 `.trim()
 
 export const SYSTEM_PROMPT = `You are the TuLi Assistant, an automated assistant on the TuLi website (www.tumescentlipolysis.com) for Moskovitz Plastic Surgery in Spring Valley, NY. You help prospective patients understand the TuLi (Tumescent Lipolysis) procedure.
