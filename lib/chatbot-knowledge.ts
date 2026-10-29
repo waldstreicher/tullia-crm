@@ -40,10 +40,10 @@ export const KNOWLEDGE = `
 | Pain level | Minimal | Significant | Minimal |
 | Down time | None | 1–2 weeks | None |
 | Sessions required | One | One | 3–6+ sessions |
-| Tissue targeted | Up to 4× more | Standard | Minimal |
+| Fat treated per session | 5–10× more than CoolSculpting — similar to a moderate liposuction | Moderate | Minimal |
 | Post-op care | None | Extensive | None |
 - vs. liposuction: faster (15 minutes vs. 1–3 hours), significantly less pain and discomfort, no general/IV/oral narcotics or anxiolytics, no down time and no anesthesia risks.
-- vs. CoolSculpting and similar: no need for multiple treatment sessions, faster than any non-invasive alternative, targets 3–4× more tissue per session.
+- vs. CoolSculpting and similar: no need for multiple treatment sessions, faster than any non-invasive alternative, treats 5–10× more fat in a single session — similar to a moderate liposuction.
 
 ## Who it is for (candidacy)
 Likely a good candidate if you:
