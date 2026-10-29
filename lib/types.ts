@@ -95,16 +95,20 @@ export const STAGE_ORDER: PipelineStage[] = [
   'lost',
 ]
 
+// Head-to-toe. Mirrors areaOptions in the website's ConsultationForm.
 export const PROCEDURE_AREAS = [
-  'Arms',
   'Chin',
+  'Arms',
+  'Axilla ("Chicken Cutlet")',
   'Male Chest',
+  'Female Breasts',
   'Stomach',
+  'Mons',
   'Hips',
   'Thighs',
-  'Legs',
-  'Female Breasts',
-  'Buttocks',
+  'Medial Thighs',
+  'Knees',
+  'Buttock (Banana Roll only)',
 ]
 
 // ─── Scheduling ──────────────────────────────────────────────────────────────
