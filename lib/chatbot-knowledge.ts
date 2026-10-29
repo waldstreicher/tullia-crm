@@ -20,7 +20,7 @@ export const KNOWLEDGE = `
 
 ## The procedure
 - The complete procedure takes about 15 minutes in the office.
-- Areas treated: abdomen, hips, thighs, arms, and chin. Multiple areas can be treated in a single 15-minute visit.
+- Areas treated: abdomen, hips, thighs, arms, and chin. One body area can be treated at a time, or multiple areas in the same session, depending on the degree of treatment and the approach developed by the surgeon.
 - No anesthesia is required. Self-administered nitrous oxide is available if the patient chooses.
 - Pain level: minimal.
 - Down time: none. Patients return to activity immediately ("walk out of the office and back into your life").
