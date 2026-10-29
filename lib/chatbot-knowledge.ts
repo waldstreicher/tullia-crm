@@ -41,7 +41,7 @@ export const KNOWLEDGE = `
 - Temporary skin numbness can last approximately 3 to 6 months.
 - Mild bloating or swelling may occur during the first few days and gradually resolves as the body absorbs the treated fat cells.
 - Mild bruising may occur in the treated area.
-- No activity restrictions following treatment; patients can work out as soon as they are ready.
+- No activity restrictions following treatment; patients can exercise as soon as they are ready.
 - The assistant does not have complication rates or statistics; for a full discussion of risks as they apply to an individual, Dr. Moskovitz covers that at a consultation.
 
 ## How it compares (the site's comparison table)
