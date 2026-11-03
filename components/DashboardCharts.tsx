@@ -75,7 +75,7 @@ export default function DashboardCharts({ clickable }: { clickable: boolean }) {
     setLoading(true)
     fetch(`/api/metrics/timeseries?granularity=${granularity}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => !cancelled && setData(d))
+      .then((d) => !cancelled && setData(d && Array.isArray(d.buckets) && d.meta ? d : null))
       .catch(() => {})
       .finally(() => !cancelled && setLoading(false))
     return () => {

@@ -15,6 +15,7 @@ import {
 import AppLayout from '@/components/AppLayout'
 import LeadTable from '@/components/LeadTable'
 import DashboardCharts from '@/components/DashboardCharts'
+import FunnelChart from '@/components/FunnelChart'
 import { leadsHref } from '@/lib/lead-filters'
 import { createClient } from '@/lib/supabase-browser'
 import { getRole } from '@/lib/roles'
@@ -191,6 +192,9 @@ export default function DashboardPage() {
 
         {/* Histograms: leads added + Meta ad spend */}
         <DashboardCharts clickable={clickable} />
+
+        {/* Consult → treatment funnel */}
+        <FunnelChart />
 
         {/* Pipeline breakdown */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
