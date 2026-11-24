@@ -190,7 +190,9 @@ export async function cancelScheduledEmail(id: string): Promise<{ ok: boolean; e
 // ─── Scheduling emails ───────────────────────────────────────────────────────
 const PRACTICE_PHONE = '(201) 225-1101'
 
-function shell(title: string, bodyHtml: string, footer: string): string {
+// Prospect-facing emails pass `automated: true` to carry the do-not-reply notice.
+const NO_REPLY_NOTE = 'This is an automated email. Please do not reply to it.'
+function shell(title: string, bodyHtml: string, footer: string, automated = false): string {
   return `<!doctype html>
 <html>
 <body style="margin:0;padding:0;background:#FAFAF8">
@@ -203,7 +205,8 @@ function shell(title: string, bodyHtml: string, footer: string): string {
       <div style="font-size:18px;font-weight:600;color:${DARK};margin-bottom:12px">${esc(title)}</div>
       ${bodyHtml}
     </div>
-    <div style="font-size:11px;color:${MUTED};margin-top:18px;text-align:center;line-height:1.5">${footer}</div>
+    ${automated ? `<div style="font-size:12px;color:${MUTED};margin-top:14px;text-align:center;line-height:1.5"><strong>${NO_REPLY_NOTE}</strong></div>` : ''}
+    <div style="font-size:11px;color:${MUTED};margin-top:${automated ? 6 : 18}px;text-align:center;line-height:1.5">${footer}</div>
   </div>
 </body>
 </html>`
@@ -238,7 +241,7 @@ export function renderBookingConfirmation({
     ${whenBox(whenLabel)}
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
       <strong>Reminder:</strong> our office staff will call you at that time, at the phone number you provided.
-      The call takes about 30 minutes — it's a chance to talk through your goals and any questions before a consultation.
+      The call takes about 10 minutes — it's a chance to talk through your goals and any questions before a consultation.
     </p>
     <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
       Need to change the time? Please call our office at ${PRACTICE_PHONE}.
@@ -246,7 +249,8 @@ export function renderBookingConfirmation({
   return shell(
     rescheduled ? 'Your call has been rescheduled' : consultRequest ? 'Your call is booked' : 'Your call is confirmed',
     body,
-    `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`
+    `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`,
+    true
   )
 }
 
@@ -274,12 +278,13 @@ export function renderConsultRequestReceived({
       ${how}
     </p>
     <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
-      Questions in the meantime? Just reply to this email or call ${PRACTICE_PHONE}.
+      Questions in the meantime? Call our office at ${PRACTICE_PHONE}.
     </p>`
   return shell(
     'Thank you for your consultation request',
     body,
-    `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`
+    `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`,
+    true
   )
 }
 
@@ -292,7 +297,7 @@ export function renderBookingReminder({ firstName, whenLabel }: { firstName: str
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
       Our office staff will call you at that time, at the phone number you provided. If you can't make it, please call our office at ${PRACTICE_PHONE} and we'll find another time.
     </p>`
-  return shell('Your call is today', body, `TuLi — Tumescent Lipolysis · ${PRACTICE_PHONE}`)
+  return shell('Your call is today', body, `TuLi — Tumescent Lipolysis · ${PRACTICE_PHONE}`, true)
 }
 
 // To staff. Deliberately contains NO patient information — only the time and a
