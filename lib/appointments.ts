@@ -8,7 +8,8 @@ import {
   normalizeTime,
   type Slot,
 } from './scheduling'
-import { sendEmail, renderBookingConfirmation, renderStaffBookingNotice } from './email'
+import { PROSPECT_FROM, sendEmail, renderBookingConfirmation, renderStaffBookingNotice } from './email'
+import { cancelQueuedConsultRequestEmail } from './consult-email'
 import type { Appointment, AvailabilityRule, AvailabilityOverride, NoteType } from './types'
 
 // Server-side scheduling operations shared by the public booking endpoint, the
@@ -197,13 +198,25 @@ export async function bookAppointment(
     )
   }
 
+  // A first booking replaces the queued "we'll call you the next business day"
+  // email from the consult request, if it hasn't gone out yet.
+  const cancelledQueued = previous ? false : await cancelQueuedConsultRequestEmail(db, leadId)
+  // Website bookings made right after the consult request get the
+  // consult-request wording ("Thank you for requesting a TuLi consultation").
+  const consultRequest = !previous && via === 'website' && cancelledQueued
+
   // Confirmation to the prospect. A failed send never fails the booking — it's
   // recorded on the timeline so staff can follow up by phone.
   const firstName = (lead as { first_name: string }).first_name
   const conf = await sendEmail({
     to: (lead as { email: string }).email,
-    subject: previous ? 'Your TuLi call has been rescheduled' : 'Your TuLi follow-up call is confirmed',
-    html: renderBookingConfirmation({ firstName, whenLabel, rescheduled: !!previous }),
+    from: PROSPECT_FROM,
+    subject: previous
+      ? 'Your TuLi call has been rescheduled'
+      : consultRequest
+        ? 'Thank you for your TuLi consultation request — your call is booked'
+        : 'Your TuLi follow-up call is confirmed',
+    html: renderBookingConfirmation({ firstName, whenLabel, rescheduled: !!previous, consultRequest }),
     replyTo: owner,
   })
   if (conf.ok) {

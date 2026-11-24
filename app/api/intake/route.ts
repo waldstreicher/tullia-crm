@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { getCorsHeaders, corsPreflight } from '@/lib/cors'
 import { signBookingToken } from '@/lib/booking-token'
 import { insertLeadWithDuplicateCheck } from '@/lib/duplicates'
+import { queueConsultRequestEmail } from '@/lib/consult-email'
 
 export async function OPTIONS(request: Request) {
   return corsPreflight(request)
@@ -75,6 +76,10 @@ export async function POST(request: Request) {
         { status: 500, headers: corsHeaders }
       )
     }
+
+    // Automatic email to the prospect from consults@ — queued, so it can be
+    // swapped for the booking confirmation if they book a call next.
+    await queueConsultRequestEmail(supabase, { id: data.id, first_name, email })
 
     // booking_token lets the website send the prospect straight to the
     // /schedule page to pick a follow-up call slot for this lead.

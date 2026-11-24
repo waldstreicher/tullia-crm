@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { sendEmail, renderBookingReminder } from '@/lib/email'
+import { PROSPECT_FROM, sendEmail, renderBookingReminder } from '@/lib/email'
 import { logNote } from '@/lib/appointments'
 import { etDateStr, etToUtc, addDays, formatFullEt, OWNER_EMAIL } from '@/lib/scheduling'
 
@@ -45,6 +45,7 @@ export async function GET(request: Request) {
     const whenLabel = formatFullEt(new Date(a.starts_at))
     const r = await sendEmail({
       to: lead.email,
+      from: PROSPECT_FROM,
       subject: 'Reminder: your TuLi follow-up call is today',
       html: renderBookingReminder({ firstName: lead.first_name, whenLabel }),
       replyTo: a.owner_email || OWNER_EMAIL,

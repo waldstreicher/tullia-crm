@@ -115,20 +115,31 @@ export function renderDigestEmail(m: DashboardMetrics, dateStr: string): string 
 </html>`
 }
 
-// Sends an email via the Resend HTTP API. Returns { ok, error? } — never throws.
+// Sender for everything a prospect receives (consult acknowledgment, call
+// confirmations, reminders). Staff notices keep using RESEND_FROM. The domain
+// must be verified in Resend for this address to send.
+export const PROSPECT_FROM = process.env.CONSULT_FROM || 'TuLi <consults@tumescentlipolysis.com>'
+
+// Sends an email via the Resend HTTP API. Returns { ok, id?, error? } — never throws.
+// `scheduledAt` asks Resend to hold the email and deliver it at that time; it
+// can be cancelled until then with cancelScheduledEmail(id).
 export async function sendEmail({
   to,
   subject,
   html,
   replyTo,
+  from: fromOverride,
+  scheduledAt,
 }: {
   to: string
   subject: string
   html: string
   replyTo?: string
-}): Promise<{ ok: boolean; error?: string }> {
+  from?: string
+  scheduledAt?: Date
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.RESEND_FROM
+  const from = fromOverride || process.env.RESEND_FROM
   if (!apiKey || !from) {
     return { ok: false, error: 'RESEND_API_KEY or RESEND_FROM is not set' }
   }
@@ -139,15 +150,40 @@ export async function sendEmail({
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(scheduledAt ? { scheduled_at: scheduledAt.toISOString() } : {}),
+      }),
     })
     if (!res.ok) {
       const text = await res.text()
       return { ok: false, error: `Resend ${res.status}: ${text}` }
     }
-    return { ok: true }
+    const data = (await res.json().catch(() => ({}))) as { id?: string }
+    return { ok: true, id: data.id }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'send failed' }
+  }
+}
+
+// Cancels an email that was sent with `scheduledAt` and hasn't gone out yet.
+// Fails (harmlessly) once the email has already been delivered.
+export async function cancelScheduledEmail(id: string): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return { ok: false, error: 'RESEND_API_KEY is not set' }
+  try {
+    const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}/cancel`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    })
+    if (!res.ok) return { ok: false, error: `Resend ${res.status}: ${await res.text()}` }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'cancel failed' }
   }
 }
 
@@ -178,30 +214,57 @@ function whenBox(whenLabel: string): string {
 }
 
 // To the prospect, right after they pick a slot (or after staff reschedule them).
+// `consultRequest` is the prospect's first email after requesting a consult on
+// the website and booking a call on the same visit.
 export function renderBookingConfirmation({
   firstName,
   whenLabel,
   rescheduled = false,
+  consultRequest = false,
 }: {
   firstName: string
   whenLabel: string
   rescheduled?: boolean
+  consultRequest?: boolean
 }): string {
+  const lead = rescheduled
+    ? 'Your follow-up call has been moved to:'
+    : consultRequest
+      ? 'Thank you for requesting a TuLi consultation. Your call with our office is scheduled for:'
+      : 'Your follow-up call about TuLi is confirmed for:'
   const body = `
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">Hi ${esc(firstName)},</p>
-    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">
-      ${rescheduled ? 'Your follow-up call has been moved to:' : 'Your follow-up call about TuLi is confirmed for:'}
-    </p>
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">${lead}</p>
     ${whenBox(whenLabel)}
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
-      A member of the TuLi team will call you at the phone number you provided. The call takes about 30 minutes —
-      it's a chance to talk through your goals and any questions before a consultation.
+      <strong>Reminder:</strong> our office staff will call you at that time, at the phone number you provided.
+      The call takes about 30 minutes — it's a chance to talk through your goals and any questions before a consultation.
     </p>
     <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
       Need to change the time? Just reply to this email or call ${PRACTICE_PHONE}.
     </p>`
   return shell(
-    rescheduled ? 'Your call has been rescheduled' : 'Your call is confirmed',
+    rescheduled ? 'Your call has been rescheduled' : consultRequest ? 'Your call is booked' : 'Your call is confirmed',
+    body,
+    `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`
+  )
+}
+
+// To the prospect after a website consult request when no call was booked.
+export function renderConsultRequestReceived({ firstName }: { firstName: string }): string {
+  const body = `
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">Hi ${esc(firstName)},</p>
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">
+      Thank you for requesting a TuLi consultation. We've received your request.
+    </p>
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">
+      Our office will do our best to call you the next business day, at the phone number you provided.
+    </p>
+    <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
+      Questions in the meantime? Just reply to this email or call ${PRACTICE_PHONE}.
+    </p>`
+  return shell(
+    'Thank you for your consultation request',
     body,
     `TuLi — Tumescent Lipolysis · 67 NY-59, Suite 211, Spring Valley, NY 10977 · ${PRACTICE_PHONE}`
   )
@@ -214,7 +277,7 @@ export function renderBookingReminder({ firstName, whenLabel }: { firstName: str
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">A quick reminder that your TuLi follow-up call is today:</p>
     ${whenBox(whenLabel)}
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
-      A member of the TuLi team will call the phone number you provided. If you can't make it, reply to this email or call ${PRACTICE_PHONE} and we'll find another time.
+      Our office staff will call you at that time, at the phone number you provided. If you can't make it, reply to this email or call ${PRACTICE_PHONE} and we'll find another time.
     </p>`
   return shell('Your call is today', body, `TuLi — Tumescent Lipolysis · ${PRACTICE_PHONE}`)
 }
