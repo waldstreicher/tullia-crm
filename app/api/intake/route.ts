@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     // Automatic email to the prospect from consults@ — queued, so it can be
     // swapped for the booking confirmation if they book a call next.
-    await queueConsultRequestEmail(supabase, { id: data.id, first_name, email })
+    await queueConsultRequestEmail(supabase, { id: data.id, first_name, email, preferred_contact: preferred_contact || null })
 
     // booking_token lets the website send the prospect straight to the
     // /schedule page to pick a follow-up call slot for this lead.

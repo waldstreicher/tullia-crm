@@ -34,7 +34,7 @@ async function note(db: Db, leadId: string, text: string, type: 'email' | 'syste
 // Called by /api/intake right after the lead is saved. Never throws.
 export async function queueConsultRequestEmail(
   db: Db,
-  lead: { id: string; first_name: string; email: string },
+  lead: { id: string; first_name: string; email: string; preferred_contact?: string | null },
   now: Date = new Date()
 ): Promise<void> {
   try {
@@ -44,14 +44,14 @@ export async function queueConsultRequestEmail(
       from: PROSPECT_FROM,
       replyTo: OWNER_EMAIL,
       subject: 'We received your TuLi consultation request',
-      html: renderConsultRequestReceived({ firstName: lead.first_name }),
+      html: renderConsultRequestReceived({ firstName: lead.first_name, preferredContact: lead.preferred_contact }),
       scheduledAt: sendAt,
     })
     if (r.ok && r.id) {
       await note(
         db,
         lead.id,
-        `${QUEUED_PREFIX} for ${etTime(sendAt)} ("we'll call you the next business day"). It is cancelled automatically if the prospect books a call first. [ref:${r.id}]`,
+        `${QUEUED_PREFIX} for ${etTime(sendAt)} ("we'll ${lead.preferred_contact === 'email' ? 'email' : lead.preferred_contact === 'phone' ? 'call' : 'contact'} you the next business day"). It is cancelled automatically if the prospect books a call first. [ref:${r.id}]`,
         'email'
       )
     } else {

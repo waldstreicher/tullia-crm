@@ -241,7 +241,7 @@ export function renderBookingConfirmation({
       The call takes about 30 minutes — it's a chance to talk through your goals and any questions before a consultation.
     </p>
     <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
-      Need to change the time? Just reply to this email or call ${PRACTICE_PHONE}.
+      Need to change the time? Please call our office at ${PRACTICE_PHONE}.
     </p>`
   return shell(
     rescheduled ? 'Your call has been rescheduled' : consultRequest ? 'Your call is booked' : 'Your call is confirmed',
@@ -251,14 +251,27 @@ export function renderBookingConfirmation({
 }
 
 // To the prospect after a website consult request when no call was booked.
-export function renderConsultRequestReceived({ firstName }: { firstName: string }): string {
+// Follows the prospect's preferred contact method from the form (phone or email).
+export function renderConsultRequestReceived({
+  firstName,
+  preferredContact,
+}: {
+  firstName: string
+  preferredContact?: string | null
+}): string {
+  const how =
+    preferredContact === 'email'
+      ? 'Our office will do our best to email you the next business day.'
+      : preferredContact === 'phone'
+        ? 'Our office will do our best to call you the next business day, at the phone number you provided.'
+        : 'Our office will do our best to contact you the next business day.'
   const body = `
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">Hi ${esc(firstName)},</p>
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">
       Thank you for requesting a TuLi consultation. We've received your request.
     </p>
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">
-      Our office will do our best to call you the next business day, at the phone number you provided.
+      ${how}
     </p>
     <p style="font-size:13px;color:${MUTED};line-height:1.6;margin:14px 0 0">
       Questions in the meantime? Just reply to this email or call ${PRACTICE_PHONE}.
@@ -277,7 +290,7 @@ export function renderBookingReminder({ firstName, whenLabel }: { firstName: str
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:10px 0 0">A quick reminder that your TuLi follow-up call is today:</p>
     ${whenBox(whenLabel)}
     <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
-      Our office staff will call you at that time, at the phone number you provided. If you can't make it, reply to this email or call ${PRACTICE_PHONE} and we'll find another time.
+      Our office staff will call you at that time, at the phone number you provided. If you can't make it, please call our office at ${PRACTICE_PHONE} and we'll find another time.
     </p>`
   return shell('Your call is today', body, `TuLi — Tumescent Lipolysis · ${PRACTICE_PHONE}`)
 }
