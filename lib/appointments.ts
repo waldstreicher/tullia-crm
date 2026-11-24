@@ -8,7 +8,7 @@ import {
   normalizeTime,
   type Slot,
 } from './scheduling'
-import { PROSPECT_FROM, sendEmail, renderBookingConfirmation, renderStaffBookingNotice } from './email'
+import { PROSPECT_FROM, PROSPECT_REPLY_TO, sendEmail, renderBookingConfirmation, renderStaffBookingNotice } from './email'
 import { cancelQueuedConsultRequestEmail } from './consult-email'
 import type { Appointment, AvailabilityRule, AvailabilityOverride, NoteType } from './types'
 
@@ -217,7 +217,7 @@ export async function bookAppointment(
         ? 'Thank you for your TuLi consultation request — your call is booked'
         : 'Your TuLi follow-up call is confirmed',
     html: renderBookingConfirmation({ firstName, whenLabel, rescheduled: !!previous, consultRequest }),
-    replyTo: owner,
+    replyTo: PROSPECT_REPLY_TO,
   })
   if (conf.ok) {
     const sentAt = new Date().toISOString()

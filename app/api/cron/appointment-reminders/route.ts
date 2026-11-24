@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { PROSPECT_FROM, sendEmail, renderBookingReminder } from '@/lib/email'
+import { PROSPECT_FROM, PROSPECT_REPLY_TO, sendEmail, renderBookingReminder } from '@/lib/email'
 import { logNote } from '@/lib/appointments'
 import { etDateStr, etToUtc, addDays, formatFullEt, OWNER_EMAIL } from '@/lib/scheduling'
 
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       from: PROSPECT_FROM,
       subject: 'Reminder: your TuLi follow-up call is today',
       html: renderBookingReminder({ firstName: lead.first_name, whenLabel }),
-      replyTo: a.owner_email || OWNER_EMAIL,
+      replyTo: PROSPECT_REPLY_TO,
     })
     if (r.ok) {
       await db.from('appointments').update({ reminder_sent_at: new Date().toISOString() }).eq('id', a.id)

@@ -119,6 +119,9 @@ export function renderDigestEmail(m: DashboardMetrics, dateStr: string): string 
 // confirmations, reminders). Staff notices keep using RESEND_FROM. The domain
 // must be verified in Resend for this address to send.
 export const PROSPECT_FROM = process.env.CONSULT_FROM || 'TuLi <consults@tumescentlipolysis.com>'
+// Where replies to prospect emails go. Resend receives this address and posts
+// each reply to /api/webhooks/resend-inbound, which files it under Replies.
+export const PROSPECT_REPLY_TO = process.env.CONSULT_REPLY_TO || 'consults@tumescentlipolysis.com'
 
 // Sends an email via the Resend HTTP API. Returns { ok, id?, error? } — never throws.
 // `scheduledAt` asks Resend to hold the email and deliver it at that time; it
@@ -131,7 +134,7 @@ export async function sendEmail({
   from: fromOverride,
   scheduledAt,
 }: {
-  to: string
+  to: string | string[]
   subject: string
   html: string
   replyTo?: string
@@ -322,4 +325,17 @@ export function renderStaffBookingNotice({
       <a href="${esc(leadUrl)}" style="display:inline-block;background:${GOLD};color:#ffffff;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:10px;font-size:13px">Open in CRM</a>
     </p>`
   return shell(headline, body, 'Tuli CRM — automated notice. No patient information is included in this email.')
+}
+
+// To staff when a prospect replies to an automated email. Deliberately contains
+// NO patient information or message text — only a link to the reply in the CRM.
+export function renderReplyNotice({ replyUrl, matchedLead }: { replyUrl: string; matchedLead: boolean }): string {
+  const body = `
+    <p style="font-size:14px;color:${DARK};line-height:1.6;margin:0">
+      A prospect replied to one of the automated TuLi emails.${matchedLead ? ' The reply is linked to their lead.' : ' The sender did not match an existing lead.'}
+    </p>
+    <p style="font-size:14px;margin:16px 0 0">
+      <a href="${esc(replyUrl)}" style="display:inline-block;background:${GOLD};color:#ffffff;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:10px;font-size:13px">Read the reply in the CRM</a>
+    </p>`
+  return shell('A prospect replied', body, 'Tuli CRM — automated notice. No patient information is included in this email.')
 }

@@ -13,6 +13,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/api/public/')) return true
   // Cron endpoints authenticate via CRON_SECRET, not a user session.
   if (pathname.startsWith('/api/cron')) return true
+  // Inbound webhooks authenticate by signature (RESEND_WEBHOOK_SECRET).
+  if (pathname.startsWith('/api/webhooks/')) return true
   return false
 }
 

@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { OWNER_EMAIL } from './scheduling'
-import { PROSPECT_FROM, cancelScheduledEmail, renderConsultRequestReceived, sendEmail } from './email'
+import { PROSPECT_FROM, PROSPECT_REPLY_TO, cancelScheduledEmail, renderConsultRequestReceived, sendEmail } from './email'
 
 // Automatic email to a prospect who requests a consult on the website.
 //
@@ -42,7 +41,7 @@ export async function queueConsultRequestEmail(
     const r = await sendEmail({
       to: lead.email,
       from: PROSPECT_FROM,
-      replyTo: OWNER_EMAIL,
+      replyTo: PROSPECT_REPLY_TO,
       subject: 'We received your TuLi consultation request',
       html: renderConsultRequestReceived({ firstName: lead.first_name, preferredContact: lead.preferred_contact }),
       scheduledAt: sendAt,
