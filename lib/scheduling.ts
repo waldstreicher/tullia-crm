@@ -5,7 +5,7 @@
 // timezone math uses Intl, which handles DST correctly for business hours.
 
 export const TZ = 'America/New_York'
-export const SLOT_MINUTES = 10
+export const SLOT_MINUTES = 30
 // Prospects may book from tomorrow (nothing same-day) up to 14 days out.
 export const MIN_DAYS_AHEAD = 1
 export const MAX_DAYS_AHEAD = 14
@@ -127,9 +127,6 @@ export interface GenerateSlotsInput {
   rules: AvailabilityRuleLike[]
   overrides: AvailabilityOverrideLike[]
   bookedStarts: string[] // ISO UTC strings of live bookings
-  // Live bookings with their end times. A slot overlapping any of these is not
-  // offered (matters when slot length changes and older bookings are longer).
-  bookedRanges?: { start: string; end: string }[]
   now?: Date
   slotMinutes?: number
   minDaysAhead?: number
@@ -137,12 +134,11 @@ export interface GenerateSlotsInput {
 }
 
 // Pure function: expands weekly rules + date overrides into concrete open
-// SLOT_MINUTES slots, minus anything already booked, within the booking window.
+// 30-minute slots, minus anything already booked, within the booking window.
 export function generateSlots({
   rules,
   overrides,
   bookedStarts,
-  bookedRanges = [],
   now = new Date(),
   slotMinutes = SLOT_MINUTES,
   minDaysAhead = MIN_DAYS_AHEAD,
@@ -150,7 +146,6 @@ export function generateSlots({
 }: GenerateSlotsInput): Slot[] {
   const booked = new Set<string>()
   for (const s of bookedStarts) booked.add(new Date(s).toISOString())
-  const ranges = bookedRanges.map((r) => [new Date(r.start).getTime(), new Date(r.end).getTime()] as [number, number])
 
   const todayEt = etDateStr(now)
   const out: Slot[] = []
@@ -186,9 +181,6 @@ export function generateSlots({
         if (start.getTime() <= now.getTime()) continue
         const startIso = start.toISOString()
         if (booked.has(startIso)) continue
-        const sMs = start.getTime()
-        const eMs = sMs + slotMinutes * 60_000
-        if (ranges.some(([bs, be]) => sMs < be && eMs > bs)) continue
         out.push({
           start: startIso,
           end: new Date(start.getTime() + slotMinutes * 60_000).toISOString(),

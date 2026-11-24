@@ -37,7 +37,7 @@ export async function getOpenSlots(db: Db, owner: string = OWNER_EMAIL, now: Dat
   const { rules, overrides } = await loadAvailability(db, owner)
   const { data: booked } = await db
     .from('appointments')
-    .select('starts_at, ends_at')
+    .select('starts_at')
     .eq('owner_email', owner)
     .eq('status', 'booked')
     .gte('starts_at', now.toISOString())
@@ -55,7 +55,6 @@ export async function getOpenSlots(db: Db, owner: string = OWNER_EMAIL, now: Dat
       end_time: o.end_time ? normalizeTime(o.end_time) : null,
     })),
     bookedStarts: (booked || []).map((b: { starts_at: string }) => b.starts_at),
-    bookedRanges: (booked || []).map((b: { starts_at: string; ends_at: string }) => ({ start: b.starts_at, end: b.ends_at })),
     now,
   })
 }

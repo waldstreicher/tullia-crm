@@ -173,7 +173,7 @@ export default function AvailabilityPage() {
           <div>
             <h1 className="text-xl font-semibold text-[#1A1A1A]">Availability</h1>
             <p className="text-sm text-[#6B6B6B] mt-1">
-              The 10-minute follow-up call slots published on the website · Eastern time
+              The 30-minute follow-up call slots published on the website · Eastern time
             </p>
           </div>
           {canEdit && (
